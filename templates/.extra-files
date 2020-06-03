@@ -1,0 +1,17 @@
+# -----------------------------------------------------------------------------
+#
+# This file tells `prepare.sh` which extra files it needs to import when using
+# this source directory.
+#
+#  - Empty lines and lines beginning with '#' are ignored.
+#  - You DON'T need to include 'Makefile' and 'testsuite.csv' here.
+#  - If you put in the name of a folder (without '/' at the end), it will be 
+#    recursively copied over to the `extra-files/` directory.
+#  - If you put in the name of a folder (with '/' at the end), all files and 
+#    and folders INSIDE the folder will be put in `extra-files`.
+#
+# -----------------------------------------------------------------------------
+
+# Import the tests.c file
+tests.c
+ 
