@@ -8,9 +8,9 @@ from utils import pushd
 # Parse arguments
 parser = argparse.ArgumentParser()
 parser.add_argument("config", help="Marker configuration file")
-parser.add_argument("assgn_dir", help="Location of the marking directory")
+parser.add_argument(dest="assgn_dir", help="Location of the marking directory")
 parser.add_argument("--src", dest="src_dir", default=None,
-                    help="Source directory (defaults to config directory)")
+                    help="Source directory (Default: config directory)")
 args = parser.parse_args()
 
 if args.src_dir is None:
@@ -21,14 +21,14 @@ if args.src_dir is None:
 cfg = config.load(args.config)
 
 # Import files from source dir
-for item in cfg['files']:
+for item in cfg['imports']:
     item_path = f'{args.src_dir}/{item}'
     subprocess.call(
         f'cp -rf {item_path} {args.assgn_dir}/extra-files/', 
         shell=True
     )
 
-subprocess.call(f'cp {args.config} {args.assgn_dir}', shell=True)
+subprocess.call(f'cp {args.config} {args.assgn_dir}/config.yaml', shell=True)
 
 with pushd(args.assgn_dir):
     marksheet = open(cfg['marksheet'], 'w')

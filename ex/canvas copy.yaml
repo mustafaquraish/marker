@@ -6,7 +6,7 @@ assignment: 343885
 
 # Download late submissions
 allow_late: false
-file_name: ex0.c
+file_name: a1.c
 
 # File to store the marker report in
 report: report.txt
@@ -17,12 +17,15 @@ marksheet: marksheet.csv
 testing_dir: .
 
 # Files to be imported by the automarker for testing
-imports:
+files:
     - canvas.yaml
+    - hi.txt
     - markus.yaml
 
 compile: |
-  gcc ex0.c -o ex0
+  echo hi
+  echo hi
+  echo hi
 
 compile_log: compile.log
 
@@ -32,20 +35,21 @@ tests:
     - description: "Test 0"     # Description of the test case (for report)
       mark: 1                   # Mark for the test case
       before: echo before       # Optionally run some setup before the test
-      command: ./ex0         # Command to run the test case
+      commmand: ./tests 0       # Command to run the test case
       exit_code: 0              # Expected exit code for success
       after: echo after         # Optionally run some cleanup after test
-      timeout: 1                # Timeout in s
+      timeout: 1000             # Timeout in ms
       output: true              # Output test stdout / stderr to report
 
-    - description: "Test 1: print stuff"
+    - description: "Test 1"
       mark: 2
-      command: echo "JUST PRINTING THIS"
-      timeout: 1
+      commmand: python3 tests.py 0
+      timeout: 1s
       output: false
     
-    - description: "run_foreva"
+    - description: "Test 3, checking memory leaks"
       mark: 1
       before: valgrind --leak-check tests.c > valgrind.out
-      command: 'sleep 10'
+      commmand: grep "No leaks" valgrind.out
+      timeout: 1s
       output: True
