@@ -28,7 +28,7 @@ class Markus():
         '''
         from pathlib import Path
 
-        token_path = f"{Path.home()}/.markus-tokens.yaml"
+        token_path = f"{Path.home()}/.markus.tokens"
         if os.path.exists(token_path):
             lst = [l.strip().split(",") for l in open(token_path).readlines()]
             tokens_dict = { line[0]:line[1] for line in lst }
