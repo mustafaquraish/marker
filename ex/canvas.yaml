@@ -1,0 +1,57 @@
+# Pick the correct LMS, and give the associated information
+lms: canvas
+base_url: https://q.utoronto.ca
+course: 160057
+assignment: 343885
+
+# Download late submissions
+allow_late: false
+file_name: a1.c
+
+# File to store the marker report in
+report: report.txt
+# File in which the final marks are stored
+marksheet: marksheet.csv
+
+# Which directory to test in (relative to candidates/ID/)
+testing_dir: .
+
+# Files to be imported by the automarker for testing
+files:
+    - canvas.yaml
+    - hi.txt
+    - markus.yaml
+
+compile: |
+  echo hi
+  echo hi
+  echo hi
+
+compile_log: compile.log
+
+what: >
+  hello
+  hi
+
+# An array of tests
+tests:
+    - description: "Test 0"     # Description of the test case (for report)
+      mark: 1                   # Mark for the test case
+      before: echo before       # Optionally run some setup before the test
+      commmand: ./tests 0       # Command to run the test case
+      after: echo after         # Optionally run some cleanup after test
+      timeout: 1s               # Timeout for the test case
+      output: true              # Output test stdout / stderr to report
+
+    - description: "Test 1"
+      mark: 2
+      commmand: python3 tests.py 0
+      timeout: 1s
+      output: false
+    
+    - description: "Test 3, checking memory leaks"
+      mark: 1
+      before: valgrind --leak-check tests.c > valgrind.out
+      commmand: grep "No leaks" valgrind.out
+      timeout: 1s
+      output: True
