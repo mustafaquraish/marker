@@ -1,16 +1,40 @@
 import yaml
 import os 
     
-def set_defaults(config):
+def set_if_not(config, field, default):
+    if field not in config or config[field] is None:
+        config[field] = default
+
+def set_default_values(config):
+    assert('lms' in config), "Must have an LMS in the config"
+    assert('base_url' in config), "Must have base url for LMS in config"
+    assert('assignment' in config), "Must have assignment ID in config"
+
+    set_if_not(config, 'criteria', 'tests')            # For Markus
+    set_if_not(config, 'allow_late', False)            # For Canvas
+
+    set_if_not(config, 'marksheet', 'marksheet.csv')
+    set_if_not(config, 'report', 'report.txt')
+    set_if_not(config, 'imports', ['Makefile'])
+    set_if_not(config, 'compile', 'make all')
+    set_if_not(config, 'compile_log', 'compile.log')
+    set_if_not(config, 'testing_dir', ".")
+    set_if_not(config, 'tests', [])
+
+    for test in config['tests']:
+        set_if_not(test, 'description', '')
+        set_if_not(test, 'mark', 1)
+        set_if_not(test, 'before', None)
+        set_if_not(test, 'after', None)
+        set_if_not(test, 'timeout', 1)
+        set_if_not(test, 'output', True)
+        set_if_not(test, 'exit_code', 0)
     pass
+
 
 def load(cfg_path):
     assert(os.path.exists(cfg_path))
     with open(cfg_path) as cfg_file:
         config = yaml.safe_load(cfg_file)
-    set_defaults(config)    
+    set_default_values(config)    
     return config
-
-def save(config, cfg_path):
-    with open(cfg_path, "w") as cfg_file:
-        yaml.dump(config, cfg_file, default_flow_style=False)
