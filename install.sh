@@ -26,11 +26,11 @@ cp -r * /usr/local/marker/
 
 # Link the core files to /usr/local/bin
 echo "Adding executables to /usr/local/bin"
-ln -s /usr/local/marker/marker.py /usr/local/bin/marker
-ln -s /usr/local/marker/prepare.py /usr/local/bin/prepare
-ln -s /usr/local/marker/lms-download.py /usr/local/bin/lms-download
-ln -s /usr/local/marker/lms-upload-marks.py /usr/local/bin/lms-upload-marks
-ln -s /usr/local/marker/lms-upload-reports.py /usr/local/bin/lms-upload-reports
-ln -s /usr/local/marker/lms-set-status.py /usr/local/bin/lms-set-status
+ln -s /usr/local/marker/marker /usr/local/bin/marker
+ln -s /usr/local/marker/prepare /usr/local/bin/prepare
+ln -s /usr/local/marker/lms-download /usr/local/bin/lms-download
+ln -s /usr/local/marker/lms-upload-marks /usr/local/bin/lms-upload-marks
+ln -s /usr/local/marker/lms-upload-reports /usr/local/bin/lms-upload-reports
+ln -s /usr/local/marker/lms-set-status /usr/local/bin/lms-set-status
 
 echo "Done."
