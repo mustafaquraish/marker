@@ -59,7 +59,7 @@ def prepare_handler(student):
         print(f"- Compiling {student} ...")
         cmd = cfg['compile']
         with open(cfg['compile_log'], 'w') as log:
-            run_command(cmd, timeout=1, output=log)
+            run_command(cmd, timeout=10, output=log)
 
 
 with pushd(args.assgn_dir):
