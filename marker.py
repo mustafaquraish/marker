@@ -32,6 +32,13 @@ def mark_submission(student):
 
             # -----------------------------------------------------------------
 
+            # Force recompile if needed
+            if args.recompile:
+                with open(cfg['compile_log'], 'w') as log:
+                    run_command(cfg['compile'], timeout=10, output=log)
+
+            # -----------------------------------------------------------------
+
             # Add the compile log if needed
             if cfg['include_compile_log']:
                 report_file.write('- Compiling code ...\n\n')
@@ -77,6 +84,10 @@ def mark_submission(student):
 parser = argparse.ArgumentParser()
 parser.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
                     help="Location of marking directory (Default: current)")
+parser.add_argument("--recompile", "-r", action='store_true', default=False,
+                    help="Force recompile submissions")
+parser.add_argument("--all", "-a", action='store_true', default=False,
+                    help="Force re-mark all submissions")
 parser.add_argument("--config", default=None, help="Location of "
                     "configuration file, if not config.yml in assgn_dir")
 args = parser.parse_args()
@@ -100,15 +111,17 @@ with pushd(args.assgn_dir):
 
     # -------------------------------------------------------------------------
 
-    # If the marksheet doesn't exist
-    if not os.path.exists(marksheet_path):
+    # If we want to force-remark all submissions
+    if args.all:
+        marksheet.add_students(sorted(os.listdir('candidates')))
+
+    # Or if the marksheet doesn't exist
+    elif not os.path.exists(marksheet_path):
         # Prompt the user to create
         create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
         # Add all the students in the `candidates` directory to marksheet
         if "n" not in create:
             marksheet.add_students(sorted(os.listdir('candidates')))
-            print(f"- Created blank marksheet.")
-            marksheet.save(marksheet_path)
         else:
             raise Exception("Marksheet not found or created")
     
@@ -119,17 +132,25 @@ with pushd(args.assgn_dir):
     # -------------------------------------------------------------------------
 
     def marker_handler(student):
-        marks_list = mark_submission(student)
-        marksheet.update(student, marks_list)
-    
+        marks_list = mark_submission(student)    
         total = sum(marks_list)
         print(f"- Marking {student} ... {total} marks.", flush=True)
+        return marks_list
 
     # -------------------------------------------------------------------------
 
-    executor = concurrent.futures.ProcessPoolExecutor(20)
-    fs = [executor.submit(marker_handler, st) for st in marksheet.unmarked()]
-    concurrent.futures.wait(fs)
+    # Mark all the students in parallel
+    with concurrent.futures.ProcessPoolExecutor(20) as executor:
+        futures = {executor.submit(marker_handler, st): st 
+                   for st in marksheet.unmarked()}
+        # As the marks come in, get them and update to marksheet
+        for future in concurrent.futures.as_completed(futures):
+            student = futures[future]
+            try:
+                marks_list = future.result()
+                marksheet.update(student, marks_list)
+            except Exception as exc:
+                print(f'Error when marking {student}: {exc}')
 
     # -------------------------------------------------------------------------
 
