@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='automark',
-    version='0.1.1',
+    version='1.0.0',
     scripts=['automark', 'prepare', 'lms-download',
              'lms-upload-marks', 'lms-upload-reports',
              'lms-set-status'],
