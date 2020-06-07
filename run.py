@@ -11,7 +11,7 @@ from marksheet import Marksheet
 
 # -----------------------------------------------------------------------------
 
-def mark_submission(student):
+def mark_submission(student, cfg):
     '''
     Given a student directory, run all the test cases defined in the config
     and build the report. The current working directory should be `assgn_dir`.
@@ -33,7 +33,7 @@ def mark_submission(student):
             # -----------------------------------------------------------------
 
             # Force recompile if needed
-            if args.recompile:
+            if cfg['force_recompile']:
                 with open(cfg['compile_log'], 'w') as log:
                     run_command(cfg['compile'], timeout=10, output=log)
 
@@ -80,82 +80,75 @@ def mark_submission(student):
 
 # -----------------------------------------------------------------------------
 
-# Parse arguments
-parser = argparse.ArgumentParser()
-parser.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
-                    help="Location of marking directory (Default: current)")
-parser.add_argument("--recompile", "-r", action='store_true', default=False,
-                    help="Force recompile submissions")
-parser.add_argument("--all", "-a", action='store_true', default=False,
-                    help="Force re-mark all submissions")
-parser.add_argument("--config", default=None, help="Location of "
-                    "configuration file, if not config.yml in assgn_dir")
-args = parser.parse_args()
-
-if args.config is None:
-    args.config = f'{args.assgn_dir}/config.yml'
+def marker_handler(student, cfg):
+    marks_list = mark_submission(student, cfg)    
+    total = sum(marks_list)
+    print(f"- Marking {student} ... {total} marks.", flush=True)
+    return marks_list
 
 # -----------------------------------------------------------------------------
 
-cfg = config.load(args.config)
+def main(args):
 
-# -----------------------------------------------------------------------------
+    if args.config is None:
+        args.config = f'{args.assgn_dir}/config.yml'
 
-
-# Enter assignment directory
-with pushd(args.assgn_dir):
-
-    # Create a new marksheet, we will initialize it below
-    marksheet = Marksheet()
-    marksheet_path = cfg['marksheet']
 
     # -------------------------------------------------------------------------
 
-    # If we want to force-remark all submissions
-    if args.all:
-        marksheet.add_students(sorted(os.listdir('candidates')))
+    cfg = config.load(args.config)
+    cfg['force_recompile'] = args.recompile
 
-    # Or if the marksheet doesn't exist
-    elif not os.path.exists(marksheet_path):
-        # Prompt the user to create
-        create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
-        # Add all the students in the `candidates` directory to marksheet
-        if "n" not in create:
+    # -------------------------------------------------------------------------
+
+
+    # Enter assignment directory
+    with pushd(args.assgn_dir):
+
+        # Create a new marksheet, we will initialize it below
+        marksheet = Marksheet()
+        marksheet_path = cfg['marksheet']
+
+        # ---------------------------------------------------------------------
+
+        # If we want to force-remark all submissions
+        if args.all:
             marksheet.add_students(sorted(os.listdir('candidates')))
+
+        # Or if the marksheet doesn't exist
+        elif not os.path.exists(marksheet_path):
+            # Prompt the user to create
+            create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
+            # Add all the students in the `candidates` directory to marksheet
+            if "n" not in create:
+                marksheet.add_students(sorted(os.listdir('candidates')))
+            else:
+                raise Exception("Marksheet not found or created")
+        
+        # Marksheet exists! Just load it in
         else:
-            raise Exception("Marksheet not found or created")
+            marksheet.load(marksheet_path)
     
-    # Marksheet exists! Just load it in
-    else:
-        marksheet.load(marksheet_path)
-    
-    # -------------------------------------------------------------------------
 
-    def marker_handler(student):
-        marks_list = mark_submission(student)    
-        total = sum(marks_list)
-        print(f"- Marking {student} ... {total} marks.", flush=True)
-        return marks_list
+        # ---------------------------------------------------------------------
 
-    # -------------------------------------------------------------------------
+        # Mark all the students in parallel
+        with concurrent.futures.ProcessPoolExecutor(20) as executor:
+            futures = {executor.submit(marker_handler, st, cfg): st 
+                    for st in marksheet.unmarked()}
+            # As the marks come in, get them and update to marksheet
+            for future in concurrent.futures.as_completed(futures):
+                student = futures[future]
+                try:
+                    marks_list = future.result()
+                    marksheet.update(student, marks_list)
+                except Exception as exc:
+                    print(f'Error when marking {student}: {exc}')
 
-    # Mark all the students in parallel
-    with concurrent.futures.ProcessPoolExecutor(20) as executor:
-        futures = {executor.submit(marker_handler, st): st 
-                   for st in marksheet.unmarked()}
-        # As the marks come in, get them and update to marksheet
-        for future in concurrent.futures.as_completed(futures):
-            student = futures[future]
-            try:
-                marks_list = future.result()
-                marksheet.update(student, marks_list)
-            except Exception as exc:
-                print(f'Error when marking {student}: {exc}')
+        # ---------------------------------------------------------------------
+
+        marksheet.save(marksheet_path)
 
     # -------------------------------------------------------------------------
 
-    marksheet.save(marksheet_path)
-
-# -----------------------------------------------------------------------------
-
-print("Done.")
+    print("Done.")
