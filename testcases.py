@@ -2,7 +2,7 @@ import subprocess
 
 # -----------------------------------------------------------------------------
 
-def run_command(cmd, timeout, output=subprocess.DEVNULL):
+def run_command(cmd, timeout=1, output=subprocess.DEVNULL):
     '''
     Run the command `cmd` in the current working directory, and return the 
     status.The command is run for a maximum of `timeout` seconds, and the 

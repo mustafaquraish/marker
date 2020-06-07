@@ -99,7 +99,7 @@ class Markus():
             raise ValueError(f"{student} not in the course.")
         group_id = self.mapping[student]
 
-        for fn, rid in self._get_ffs(group_id).items():
+        for _, rid in self._get_ffs(group_id).items():
             url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                    f'groups/{group_id}/feedback_files/{rid}'
                    f'.json')
@@ -176,7 +176,6 @@ class Markus():
 
         url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
               f'{group_id}/update_marks.json')
-        
         res = requests.put(url, data=breakdown, headers=self.header).json()
         return int(res['code']) == 200
     
