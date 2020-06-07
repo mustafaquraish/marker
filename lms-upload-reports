@@ -1,4 +1,4 @@
-#! /usr/local/bin/python3 import os
+#! /usr/bin/env python3
 
 import os
 import config
@@ -34,20 +34,30 @@ marksheet.load(f'{args.assgn_dir}/{cfg["marksheet"]}')
 # -----------------------------------------------------------------------------
 
 # Handler to upload mark for each thread
-def upload_handler(student, marks_list):
+def upload_handler(student):
     '''
-    Given a student's identifier, and mark, upload to LMS.
+    Given a student's identifier, upload their report file to LMS.
     '''
-    print(f"- Uploading {student} mark ...", flush=True)
-    done = lms.upload_mark(student, marks_list)
-    base = f"- Uploading {student} mark ... "
-    print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
+    testing_dir = f"{args.assgn_dir}/candidates/{student}/{cfg['testing_dir']}"
+    report_path = f"{testing_dir}/{cfg['report']}"
+
+    if not lms.student_exists(student):
+        print(f" *** Error: `{student}` not recognized on LMS", flush=True)
+    elif not os.path.exists(report_path):
+        print(f" *** Error: `{report_path}` does not exist", flush=True)
+    else:
+        done = lms.upload_report(student, report_path)
+        base = f"- Uploading {student} report ... "
+        print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
+ 
 
 # -----------------------------------------------------------------------------
+
+student_dir_list = sorted(os.listdir(f'{args.assgn_dir}/candidates'))
 
 # The following will trigger fetching the students before we multithread
 _ = lms.students()
 
 executor = concurrent.futures.ProcessPoolExecutor(20)
-fs = [executor.submit(upload_handler, st, ml) for st, ml in marksheet.items()]
+fs = [executor.submit(upload_handler, st) for st in student_dir_list]
 concurrent.futures.wait(fs)
