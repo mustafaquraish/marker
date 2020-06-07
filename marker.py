@@ -1,98 +1,134 @@
+#! /usr/local/bin/python3
+
 import argparse
 import config
 import os
 import subprocess
-import sys
 from utils import pushd
+from testcases import run_test, run_command
+from marksheet import Marksheet
+
+# -----------------------------------------------------------------------------
+
+def marker_handler(student):
+    '''
+    Given a student directory, run all the test cases defined in the config
+    and build the report. The current working directory should be `assgn_dir`.
+
+    Returns: Array of marks for each of the test cases.
+    '''
+    testing_dir = f'candidates/{student}/{cfg["testing_dir"]}'
+    marks = []
+
+    # Go into the testing directory
+    with pushd(testing_dir):
+        # Open the report file
+        with open(cfg['report'], 'w') as report_file:
+
+            # Add the report header if needed
+            if cfg['report_header'] is not None:
+                report_file.write(cfg['report_header'] + '\n')
+
+            # -----------------------------------------------------------------
+
+            # Add the compile log if needed
+            if cfg['include_compile_log']:
+                report_file.write('- Compiling code ...\n\n')
+                with open(cfg['compile_log']) as compile_log:
+                    report_file.write(compile_log.read() + '\n')
+
+            # -----------------------------------------------------------------
+            
+            # If a compilation check is set, run the command. If the check 
+            # fails, then we don't have to run any of the tests.
+            run_tests = True
+            if cfg['compile_check'] is not None:
+                status, code = run_command(cfg['compile_check'], timeout=1)
+                if not (status == 'exit' and code == 0):
+                    report_file.write("- Compilation Failed.\n")
+                    run_tests = False
+
+            # -----------------------------------------------------------------
+
+            
+            for test_case in cfg['tests']:
+                # If compilation was fine, run test and append marks to array
+                if run_tests:
+                    marks.append(run_test(test_case, report_file))
+                # Otherwise just give 0 marks for each test
+                else:
+                    marks.append(0)
+
+            # -----------------------------------------------------------------
+
+            # Output the total mark to the report for completeness
+            total_out_of = sum(test['mark'] for test in cfg['tests'])
+            total_mark = sum(marks)
+
+            report_file.write("-"*79 + '\n\n')
+            report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
+
+    return marks
+
+# -----------------------------------------------------------------------------
 
 # Parse arguments
 parser = argparse.ArgumentParser()
-parser.add_argument("assgn_dir", help="Location of the marking directory")
-parser.add_argument("--config", default=None, help="Location of configuration"
-                    " file, if not config.yaml in assgn_dir")
+parser.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
+                    help="Location of marking directory (Default: current)")
+parser.add_argument("--config", default=None, help="Location of "
+                    "configuration file, if not config.yml in assgn_dir")
 args = parser.parse_args()
 
 if args.config is None:
-    args.config = f'{args.assgn_dir}/config.yaml'
+    args.config = f'{args.assgn_dir}/config.yml'
+
+# -----------------------------------------------------------------------------
 
 cfg = config.load(args.config)
 
-def run_test(test, report):
-    report.write("-"*100 + '\n')
-    report.write("- RUNNING TEST: " + test['description'] + '\n')
-    report.write("" + '\n')
-    report.flush()
-    # print(test)
-
-    if test['before'] is not None:
-        try:
-            subprocess.call(
-                test['before'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=True,
-                timeout=float(test['timeout'])
-            )
-        except subprocess.TimeoutExpired:
-            pass
-    
-    mark = 0
-    try:
-        ret = subprocess.call(
-            test['command'],
-            stdout=report,
-            stderr=report,
-            shell=True,
-            timeout=float(test['timeout'])
-        )
-        if ret == test['exit_code']:
-            mark = test['mark']
-            print(f"- PASSED.  {mark} / {test['mark']}", file=report)
-        else:
-            print(f"- FAILED.  0 / {test['mark']}", file=report)
-
-    except subprocess.TimeoutExpired:
-        print(f"- TIMED OUT.  0 / {test['mark']}", file=report)
-
-    if test['after'] is not None:
-        try:
-            subprocess.call(
-                test['after'],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                shell=True,
-                timeout=float(test['timeout'])
-            )
-        except subprocess.TimeoutExpired:
-            pass
-    
-    print("", file=report)
-    return mark
+# -----------------------------------------------------------------------------
 
 
-
-def marker_handler(st_dir):
-    testing_path = f'candidates/{st_dir}/{cfg["testing_dir"]}'
-    marks = 0
-    with pushd(testing_path):
-        with open(cfg['report'], 'w') as report:
-            for test in cfg['tests']:
-                marks += run_test(test, report)
-    return marks
-
+# Enter assignment directory
 with pushd(args.assgn_dir):
-    marksheet = cfg['marksheet']
-    if not os.path.exists(marksheet):
-        create = input(f"{marksheet} does not exist. Create? [Y]/n: ")
+
+    # Create a new marksheet, we will initialize it below
+    marksheet = Marksheet()
+    marksheet_path = cfg['marksheet']
+
+    # -------------------------------------------------------------------------
+
+    # If the marksheet doesn't exist
+    if not os.path.exists(marksheet_path):
+        # Prompt the user to create
+        create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
+        # Add all the students in the `candidates` directory to marksheet
         if "n" not in create:
-            lines = sorted(os.listdir('candidates'))
-            with open(marksheet, 'w') as mksht:
-                for st_dir in lines:
-                    mksht.write(f'{st_dir},\n')
-            print(f"- Created {marksheet}")
+            marksheet.add_students(sorted(os.listdir('candidates')))
+            print(f"- Created blank marksheet.")
+            marksheet.save(marksheet_path)
         else:
             raise Exception("Marksheet not found or created")
     
-    for st_dir in sorted(os.listdir('candidates')):
-        print(f"- Marking {st_dir} ...", end="")
-        print(marker_handler(st_dir))
+    # Marksheet exists! Just load it in
+    else:
+        marksheet.load(marksheet_path)
+    
+    # -------------------------------------------------------------------------
+
+    for student in marksheet.unmarked():
+        print(f"- Marking {student} ...", end="", flush=True)
+        marks_list = marker_handler(student)
+        marksheet.update(student, marks_list)
+        
+        total = sum(marks_list)
+        print(f" {total} marks.", flush=True)
+
+    # -------------------------------------------------------------------------
+
+    marksheet.save(marksheet_path)
+
+# -----------------------------------------------------------------------------
+
+print("Done.")

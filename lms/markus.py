@@ -82,6 +82,10 @@ class Markus():
         self._get_mapping()
         return self.mapping.keys()
 
+    def student_exists(self, student):
+        self._get_mapping()
+        return student in self.mapping
+
     def _get_ffs(self, group_id):
         url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                f'groups/{group_id}/feedback_files.json')
@@ -157,14 +161,25 @@ class Markus():
             with open(f'{path}/{student}.zip', 'wb') as outfile:
                 outfile.write(res.content)
 
-    def upload_mark(self, student, mark):
+    def _accumulate_marks(self, mark_list):
+        from collections import defaultdict
+        breakdown = defaultdict(int)
+        for mark, test_case in zip(mark_list, self.cfg['tests']):
+            breakdown[test_case['criteria']] += mark
+        return breakdown
+
+    def upload_mark(self, student, mark_list):
         self._get_mapping()
         if student not in self.mapping:
             raise ValueError(f"{student} not in the course.")
         group_id = self.mapping[student]
 
+        breakdown = self._accumulate_marks(mark_list)
+
         url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
               f'{group_id}/update_marks.json')
-        data = { self.cfg['criteria']: mark }
-        res = requests.put(url, data=data, headers=self.header).json()
+        
+        # data = { self.cfg['criteria']: mark }
+
+        res = requests.put(url, data=breakdown, headers=self.header).json()
         print(res) 

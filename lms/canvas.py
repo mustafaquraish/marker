@@ -9,7 +9,7 @@ import os
 
 class Canvas():
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
 
     def __init__(self, config):
         self.base_url = config['base_url']
@@ -20,8 +20,8 @@ class Canvas():
         self._get_token()
         self.header = {"Authorization": "Bearer " + self.token}
 
-    #-------------------------------------------------------------------------#
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
     def _get_token(self):
         '''
@@ -43,7 +43,7 @@ class Canvas():
                     token_file.write(token)
         self.token = token
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
 
     def _get_mapping(self):
         if self.mapping is not None:
@@ -79,14 +79,20 @@ class Canvas():
         print()
         return
 
-    #-------------------------------------------------------------------------#
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
 
     def students(self):
         self._get_mapping()
         return self.mapping.keys()
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
+
+    def student_exists(self, student):
+        self._get_mapping()
+        return student in self.mapping
+        
+    # -------------------------------------------------------------------------
 
     def upload_report(self, student_id, report_path):
         '''
@@ -137,7 +143,7 @@ class Canvas():
 
         return True
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
 
     def download_submission(self, student_id, student_dir):
         self._get_mapping()
@@ -163,9 +169,9 @@ class Canvas():
 
         return True
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
     
-    def upload_mark(self, student_id, mark):
+    def upload_mark(self, student_id, mark_list):
         self._get_mapping()
         if student_id not in self.mapping:
             raise ValueError(f"{student_id} not in the course.")
@@ -173,6 +179,9 @@ class Canvas():
 
         url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
                f"assignments/{self.assgn_id}/submissions/{canvas_id}")
+
+        # For Canvas, we can only submit one numerical mark. Take the sum:
+        mark = sum(mark_list)
 
         data = {"submission[posted_grade]": f"{mark}"}
         res = requests.put(url, data=data, headers=self.header).json()
@@ -182,4 +191,4 @@ class Canvas():
 
         return True
 
-    #-------------------------------------------------------------------------#
+    # -------------------------------------------------------------------------
