@@ -91,7 +91,6 @@ class Markus():
                f'groups/{group_id}/feedback_files.json')
         res = requests.get(url, data={}, headers=self.header).json()
         ret = {ff['filename']: ff['id'] for ff in res} 
-        print(ret)
         return ret
 
     def delete_reports(self, student):
@@ -101,12 +100,11 @@ class Markus():
         group_id = self.mapping[student]
 
         for fn, rid in self._get_ffs(group_id).items():
-            print(f"- Deleting {fn} for {student} ...", flush=True)
             url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                    f'groups/{group_id}/feedback_files/{rid}'
                    f'.json')
             res = requests.delete(url, data={}, headers=self.header).json()
-            if res['code'] != 200:
+            if int(res['code']) != 200:
                 print(f" ** Error: {res['description']}")
 
 
@@ -135,7 +133,7 @@ class Markus():
                 'mime_type': mimetypes.guess_type(file_path)[0]
             }
             res = requests.post(url, data=data, headers=self.header).json()
-        return 200 <= res['code'] <= 201
+        return 200 <= int(res['code']) <= 201
 
 
     def download_submission(self, student, path):
@@ -179,7 +177,19 @@ class Markus():
         url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
               f'{group_id}/update_marks.json')
         
-        # data = { self.cfg['criteria']: mark }
-
         res = requests.put(url, data=breakdown, headers=self.header).json()
-        print(res) 
+        return int(res['code']) == 200
+    
+    def set_status(self, student, status):
+        self._get_mapping()
+        if student not in self.mapping:
+            raise ValueError(f"{student} not in the course.")
+        group_id = self.mapping[student]
+
+        url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
+              f'{group_id}/update_marking_state.json')
+        
+        data = { 'marking_state': status }
+        res = requests.put(url, data=data, headers=self.header).json()
+        return int(res['code']) == 200
+

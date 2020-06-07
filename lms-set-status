@@ -1,16 +1,19 @@
 #! /usr/bin/env python3
 
 import os
+import sys
 import config
 import argparse
 import concurrent.futures
 
 from utils import pushd
-from lms import LMS_Factory
+from lms.markus import Markus
 from marksheet import Marksheet
 
 # Parse arguments
 parser = argparse.ArgumentParser()
+parser.add_argument("status", choices=['complete', 'incomplete'], 
+                    help="Marking status for students (MarkUs only)")
 parser.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
                     help="Location of assignment dir (Default: current)")
 parser.add_argument("--config", default=None, help="Location of "
@@ -24,7 +27,12 @@ if args.config is None:
 
 # Load the configuration and get an instance of the LMS class
 cfg = config.load(args.config)
-lms = LMS_Factory(cfg)
+
+if cfg['lms'].lower() != "markus":
+    print(f"- Nothing to do on {cfg['lms']}; this is only for MarkUs.")
+    sys.exit(0)
+
+lms = Markus(cfg)
 
 # -----------------------------------------------------------------------------
 
@@ -34,11 +42,11 @@ marksheet.load(f'{args.assgn_dir}/{cfg["marksheet"]}')
 # -----------------------------------------------------------------------------
 
 # Handler to upload mark for each thread
-def upload_handler(student, marks_list):
+def status_handler(student, status):
     '''
     Given a student's identifier, and mark, upload to LMS.
     '''
-    done = lms.upload_mark(student, marks_list)
+    done = lms.set_status(student, status)
     base = f"- Uploading {student} mark ... "
     print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
 
@@ -47,9 +55,8 @@ def upload_handler(student, marks_list):
 # The following will trigger fetching the students before we multithread
 _ = lms.students()
 
-for st, m in marksheet.items():
-    upload_handler(st, m)
 
-# executor = concurrent.futures.ProcessPoolExecutor(20)
-# fs = [executor.submit(upload_handler, st, ml) for st, ml in marksheet.items()]
-# concurrent.futures.wait(fs)
+executor = concurrent.futures.ProcessPoolExecutor(20)
+fs = [executor.submit(status_handler, student, args.status) 
+      for student, _ in marksheet.items()]
+concurrent.futures.wait(fs)
