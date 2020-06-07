@@ -13,6 +13,7 @@ This package installs the following scripts:
 - `automark`: Runs all the test cases, creates logs and compiles marks.
 - `lms-upload-marks`: Uploads the student marks to the LMS.
 - `lms-upload-reports`: Uploads the testing logs to the LMS for the student.
+- `lms-set-status`: Sets the marking state of the submission (MarkUs only).
 
 ---
 

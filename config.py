@@ -37,7 +37,7 @@ def set_default_values(config):
         set_if_not(test, 'exit_code', 0)    
 
         # For Markus
-        set_if_not(config, 'criteria', config['default_criteria'])
+        set_if_not(test, 'criteria', config['default_criteria'])
 
     pass
 
