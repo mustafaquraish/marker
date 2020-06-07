@@ -5,12 +5,13 @@ import config
 import os
 import subprocess
 from utils import pushd
+import concurrent.futures
 from testcases import run_test, run_command
 from marksheet import Marksheet
 
 # -----------------------------------------------------------------------------
 
-def marker_handler(student):
+def mark_submission(student):
     '''
     Given a student directory, run all the test cases defined in the config
     and build the report. The current working directory should be `assgn_dir`.
@@ -117,13 +118,18 @@ with pushd(args.assgn_dir):
     
     # -------------------------------------------------------------------------
 
-    for student in marksheet.unmarked():
-        print(f"- Marking {student} ...", end="", flush=True)
-        marks_list = marker_handler(student)
+    def marker_handler(student):
+        marks_list = mark_submission(student)
         marksheet.update(student, marks_list)
-        
+    
         total = sum(marks_list)
-        print(f" {total} marks.", flush=True)
+        print(f"- Marking {student} ... {total} marks.", flush=True)
+
+    # -------------------------------------------------------------------------
+
+    executor = concurrent.futures.ProcessPoolExecutor(20)
+    fs = [executor.submit(marker_handler, st) for st in marksheet.unmarked()]
+    concurrent.futures.wait(fs)
 
     # -------------------------------------------------------------------------
 
