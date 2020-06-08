@@ -1,38 +1,38 @@
 #! /usr/bin/env python3
 
-import argparse
-import config
 import os
-import subprocess
 import sys
 import concurrent.futures
-from utils import pushd
-from marksheet import Marksheet
-from testcases import run_command
+
+from ..utils import config
+from ..utils import pushd
+from ..utils import run_command
+from ..utils.marksheet import Marksheet
 
 def prepare_handler(student, cfg):
+    '''
+    Given a student's identifier, Copies over all the files to their directory
+    and compiles them. Assumes that the working directory is the root of the 
+    assignment directory.
+    '''
     st_path = f'candidates/{student}' 
     if not os.path.isdir(st_path):
         return
 
     # Copy over the extra testing files into the student directory
-    run_command(f"cp -rf extra-files/* {st_path}/", timeout=1)
+    run_command(f"cp -rf extra-files/* {st_path}/")
     
     # Go into testing directory, run the compile command and output the
     # logs to the file decribed in cthe configiguration
     testing_path = f'{st_path}/{cfg["testing_dir"]}'
     with pushd(testing_path):
-        print(f"- Compiling {student} ...")
-        cmd = cfg['compile']
+        print(f"- Compiling {student} ...", flush=True)
         with open(cfg['compile_log'], 'w') as log:
-            run_command(cmd, timeout=10, output=log)
+            run_command(cfg['compile'], output=log)
 
 # -----------------------------------------------------------------------------
 
 def main(args):
-
-    if args.src_dir is None:
-        args.src_dir = os.path.dirname(os.path.abspath(args.config))
 
     cfg = config.load(args.config)
 
@@ -42,18 +42,12 @@ def main(args):
         item_path = f'{args.src_dir}/{item}'
         run_command(f'cp -rf {item_path} {args.assgn_dir}/extra-files/')
 
-
     with pushd(args.assgn_dir):
 
-        student_dir_list = sorted(os.listdir('candidates'))
-
         # Prepare the submissions in parallel
-        futures = []
         with concurrent.futures.ProcessPoolExecutor(20) as executor:
-            for student in student_dir_list:
-                futures.append(executor.submit(prepare_handler, student, cfg))
-        concurrent.futures.wait(futures)
-
+            for student in sorted(os.listdir('candidates')):
+                executor.submit(prepare_handler, student, cfg)
 
         # Create a blank marksheet.
         marksheet = Marksheet()

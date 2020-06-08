@@ -2,13 +2,14 @@
 
 import os
 import sys
-import config
-import argparse
 import concurrent.futures
 
-from utils import pushd
-from lms.markus import Markus
-from marksheet import Marksheet
+from ..utils import config
+from ..utils import pushd
+from ..utils import run_command
+from ..utils.marksheet import Marksheet
+
+from ..lms import Markus
 
 # Handler to upload mark for each thread
 def status_handler(student, status, lms):

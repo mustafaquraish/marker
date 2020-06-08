@@ -1,13 +1,12 @@
 #! /usr/bin/env python3
 
 import os
-import config
-import argparse
-import subprocess
 import concurrent.futures
-from utils import pushd
 
-from lms import LMS_Factory
+from ..utils import config
+from ..utils import pushd
+from ..lms import LMS_Factory
+
 
 # Handler to download submission for each process
 def download_handler(candidates_dir, student, lms):

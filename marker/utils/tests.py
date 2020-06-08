@@ -1,32 +1,4 @@
-import subprocess
-
-# -----------------------------------------------------------------------------
-
-def run_command(cmd, timeout=1, output=subprocess.DEVNULL):
-    '''
-    Run the command `cmd` in the current working directory, and return the 
-    status.The command is run for a maximum of `timeout` seconds, and the 
-    stdout/stderr are redirected to `output`.
-
-    Returns: Either
-        ('exit', exit_status)
-            OR
-        ('timeout', None)
-    '''
-    try:
-        exit_status = subprocess.call(
-            cmd,
-            stdout=output,
-            stderr=output,
-            timeout=timeout,
-            shell=True
-        )
-        return ('exit', exit_status)
-
-    except subprocess.TimeoutExpired:
-        return ('timeout', None)
-
-# -----------------------------------------------------------------------------
+from . import run_command
 
 def run_test(test, report_file):
     '''
@@ -56,8 +28,6 @@ def run_test(test, report_file):
     if test['after'] is not None:
         run_command(test['after'], timeout)
     
-    # -------------------------------------------------------------------------
-
     report_file.write("\n")
 
     # -------------------------------------------------------------------------
@@ -82,4 +52,3 @@ def run_test(test, report_file):
     report_file.flush()
     return mark
 
-# -----------------------------------------------------------------------------

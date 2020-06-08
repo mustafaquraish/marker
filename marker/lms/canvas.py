@@ -21,6 +21,7 @@ class Canvas():
         self.header = {"Authorization": "Bearer " + self.token}
 
     # -------------------------------------------------------------------------
+    #       Internal Utils
     # -------------------------------------------------------------------------
 
     def _get_token(self):
@@ -56,13 +57,16 @@ class Canvas():
 
         self.mapping = {}
 
-        while (page == 1 or res != []):
+        while (res != []):
             data = { 
                 'enrollment_type': 'student', 
                 'per_page': 100, 
                 'page': page, 
             }
             res = requests.get(url, data=data, headers=self.header).json()
+
+            # Pick the field as the identifier. For archived courses, login_id
+            # is not always available. This makes it easier to test
             for user in res:
                 if 'login_id' in user:
                     self.mapping[user['login_id']] = user['id']
@@ -80,6 +84,7 @@ class Canvas():
         return
 
     # -------------------------------------------------------------------------
+    #       Functions meant to be exposed
     # -------------------------------------------------------------------------
 
     def students(self):
@@ -190,5 +195,3 @@ class Canvas():
             return False
 
         return True
-
-    # -------------------------------------------------------------------------
