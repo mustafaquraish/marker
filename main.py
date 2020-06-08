@@ -51,8 +51,13 @@ parser_run.add_argument("--recompile", "-r", action='store_true',
                         help="Force recompile submissions")
 parser_run.add_argument("--all", "-a", action='store_true', default=False,
                         help="Force re-mark all submissions")
-parser_run.add_argument("--config", default=None, help="Location of "
-                        "configuration file, if not config.yml in assgn_dir")
+parser_run.add_argument("--config", default=None, metavar="cfg",
+                        help="Location of configuration file, if not "
+                        "config.yml in assgn_dir")
+parser_run.add_argument("--no-parallel", "-n", dest="no_parallel",
+                        action='store_true', help="Don't mark students in "
+                        "parallel. This might be needed if tests keep timing "
+                        "out due to CPU load")
 parser_run.set_defaults(func=run.main)
 
 # -----------------------------------------------------------------------------
@@ -62,8 +67,9 @@ parser_run.set_defaults(func=run.main)
 parser_upm = subparsers.add_parser('upload-marks', help='Upload the marks')
 parser_upm.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
                         help="Location of assignment dir (Default: current)")
-parser_upm.add_argument("--config", default=None, help="Location of "
-                        "configuration file, if not config.yml in assgn_dir")
+parser_upm.add_argument("--config", default=None, metavar="cfg",
+                        help="Location of configuration file, if not "
+                        "config.yml in assgn_dir")
 parser_upm.set_defaults(func=upload_marks.main)
 
 # -----------------------------------------------------------------------------
@@ -73,8 +79,9 @@ parser_upm.set_defaults(func=upload_marks.main)
 parser_upr = subparsers.add_parser('upload-reports', help='Upload the reports')
 parser_upr.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
                         help="Location of assignment dir (Default: current)")
-parser_upr.add_argument("--config", default=None, help="Location of "
-                        "configuration file, if not config.yml in assgn_dir")
+parser_upr.add_argument("--config", default=None, metavar="cfg",
+                        help="Location of configuration file, if not "
+                        "config.yml in assgn_dir")
 parser_upr.set_defaults(func=upload_reports.main)
 
 
@@ -87,8 +94,9 @@ parser_sst.add_argument("status", choices=['complete', 'incomplete'],
                         help="Status to set")
 parser_sst.add_argument("assgn_dir", nargs='?', default=os.getcwd(), 
                         help="Location of assignment dir (Default: current)")
-parser_sst.add_argument("--config", default=None, help="Location of "
-                        "configuration file, if not config.yml in assgn_dir")
+parser_sst.add_argument("--config", default=None, metavar="cfg",
+                        help="Location of configuration file, if not "
+                        "config.yml in assgn_dir")
 parser_sst.set_defaults(func='set_status')
 
 # -----------------------------------------------------------------------------

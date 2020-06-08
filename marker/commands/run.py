@@ -2,7 +2,6 @@
 
 import os
 import sys
-import concurrent.futures
 
 from ..utils import config
 from ..utils import pushd
@@ -115,21 +114,29 @@ def main(args):
             marksheet.load(marksheet_path)
     
 
-        # Mark all the students in parallel
-        with concurrent.futures.ProcessPoolExecutor(20) as executor:
-            future_to_student = {}
+        # If the no_parallels option is set, mark the submissions in serial
+        if (args.no_parallel):
             for student in marksheet.unmarked():
-                future = executor.submit(mark_submission, student, cfg)
-                future_to_student[future] = student 
+                marks_list = mark_submission(student, cfg)
+                marksheet.update(student, marks_list)
 
-            # As the marks come in, get them and update to marksheet
-            for future in concurrent.futures.as_completed(future_to_student):
-                student = future_to_student[future]
-                try:
-                    marks_list = future.result()
-                    marksheet.update(student, marks_list)
-                except Exception as exc:
-                    print(f'Error when marking {student}: {exc}')
+        # Otherwise, mark them all in parallel.
+        else:
+            import concurrent.futures
+            with concurrent.futures.ProcessPoolExecutor(20) as executor:
+                futures_dict = {}
+                for student in marksheet.unmarked():
+                    future = executor.submit(mark_submission, student, cfg)
+                    futures_dict[future] = student 
+
+                # As the marks come in, get them and update to marksheet
+                for future in concurrent.futures.as_completed(futures_dict):
+                    student = futures_dict[future]
+                    try:
+                        marks_list = future.result()
+                        marksheet.update(student, marks_list)
+                    except Exception as exc:
+                        print(f'Error when marking {student}: {exc}')
 
         # Finally, save (and overwrite) the marksheet
         marksheet.save(marksheet_path)

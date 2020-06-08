@@ -21,13 +21,16 @@ This package installs the program `marker`. It supports the following commands:
 
 ### - Using PIP
 
+Coming soon...
+<!-- 
 You can install these scripts with `pip` (or `pip3`) with the following:
 
 ```sh
 pip3 install marker 
 ```
 
-Make sure you have the default installation location of `pip` in your `PATH` to be able to use the scripts directly.
+Make sure you have the default installation location of `pip` in your `PATH` to be able to use the scripts directly. 
+-->
 
 ### - Build from source
 
