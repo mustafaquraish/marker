@@ -9,10 +9,11 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='marker',
-    version='1.0.0',
+    name='automark',
+    version='1.0.1',
     scripts=['build/_scripts/marker'],
     author="Mustafa Quraish",
+    license="MIT",
     author_email="mustafa@cs.toronto.edu",
     description="A highly configurable auto-marker",
     long_description=long_description,
