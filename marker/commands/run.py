@@ -1,25 +1,25 @@
 #! /usr/bin/env python3
 
-import argparse
-import config
 import os
-import subprocess
-from utils import pushd
+import sys
 import concurrent.futures
-from testcases import run_test, run_command
-from marksheet import Marksheet
 
-# -----------------------------------------------------------------------------
+from ..utils import config
+from ..utils import pushd
+from ..utils import run_command
+from ..utils.tests import run_test
+from ..utils.marksheet import Marksheet
 
 def mark_submission(student, cfg):
     '''
-    Given a student directory, run all the test cases defined in the config
-    and build the report. The current working directory should be `assgn_dir`.
+    Given a student identifier, run all the test cases defined in the config
+    and build the report. The current working directory is expected to be
+    the root of the assignment directory.
 
-    Returns: Array of marks for each of the test cases.
+    Returns: Array of marks for the test cases.
     '''
     testing_dir = f'candidates/{student}/{cfg["testing_dir"]}'
-    marks = []
+    mark_list = []
 
     # Go into the testing directory
     with pushd(testing_dir):
@@ -62,44 +62,29 @@ def mark_submission(student, cfg):
             for test_case in cfg['tests']:
                 # If compilation was fine, run test and append marks to array
                 if run_tests:
-                    marks.append(run_test(test_case, report_file))
+                    mark_list.append(run_test(test_case, report_file))
                 # Otherwise just give 0 marks for each test
                 else:
-                    marks.append(0)
+                    mark_list.append(0)
 
             # -----------------------------------------------------------------
 
             # Output the total mark to the report for completeness
             total_out_of = sum(test['mark'] for test in cfg['tests'])
-            total_mark = sum(marks)
+            total_mark = sum(mark_list)
 
             report_file.write("-"*79 + '\n\n')
             report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
 
-    return marks
-
-# -----------------------------------------------------------------------------
-
-def marker_handler(student, cfg):
-    marks_list = mark_submission(student, cfg)    
-    total = sum(marks_list)
-    print(f"- Marking {student} ... {total} marks.", flush=True)
-    return marks_list
+    print(f"- Marking {student} ... {total_mark} marks.", flush=True)
+    return mark_list
 
 # -----------------------------------------------------------------------------
 
 def main(args):
 
-    if args.config is None:
-        args.config = f'{args.assgn_dir}/config.yml'
-
-
-    # -------------------------------------------------------------------------
-
     cfg = config.load(args.config)
     cfg['force_recompile'] = args.recompile
-
-    # -------------------------------------------------------------------------
 
 
     # Enter assignment directory
@@ -109,13 +94,13 @@ def main(args):
         marksheet = Marksheet()
         marksheet_path = cfg['marksheet']
 
-        # ---------------------------------------------------------------------
-
-        # If we want to force-remark all submissions
+        # If we want to force-remark all submissions, don't load the marksheet
+        # but just create a new one
         if args.all:
             marksheet.add_students(sorted(os.listdir('candidates')))
 
-        # Or if the marksheet doesn't exist
+        # Or if the marksheet doesn't exist, ask the user if they want to make 
+        # a new one for all of the submissions
         elif not os.path.exists(marksheet_path):
             # Prompt the user to create
             create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
@@ -130,25 +115,23 @@ def main(args):
             marksheet.load(marksheet_path)
     
 
-        # ---------------------------------------------------------------------
-
         # Mark all the students in parallel
         with concurrent.futures.ProcessPoolExecutor(20) as executor:
-            futures = {executor.submit(marker_handler, st, cfg): st 
-                    for st in marksheet.unmarked()}
+            future_to_student = {}
+            for student in marksheet.unmarked():
+                future = executor.submit(mark_submission, student, cfg)
+                future_to_student[future] = student 
+
             # As the marks come in, get them and update to marksheet
-            for future in concurrent.futures.as_completed(futures):
-                student = futures[future]
+            for future in concurrent.futures.as_completed(future_to_student):
+                student = future_to_student[future]
                 try:
                     marks_list = future.result()
                     marksheet.update(student, marks_list)
                 except Exception as exc:
                     print(f'Error when marking {student}: {exc}')
 
-        # ---------------------------------------------------------------------
-
+        # Finally, save (and overwrite) the marksheet
         marksheet.save(marksheet_path)
-
-    # -------------------------------------------------------------------------
 
     print("Done.")

@@ -1,13 +1,19 @@
+all: install
 
-all:
+install:
 	python3 setup.py bdist_wheel
 	pip3 install dist/*
 
 .PHONY: clean again
 
-again: clean
+reinstall: clean
 	python3 setup.py bdist_wheel
 	pip3 install dist/*
 
+uninstall:
+	yes | pip3 uninstall marker
+
 clean:
-	yes | pip3 uninstall automark
+	rm -rf *.egg-info
+	rm -rf build
+	rm -rf dist

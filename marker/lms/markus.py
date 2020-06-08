@@ -20,6 +20,9 @@ class Markus():
 
         self._get_assgn_id()
 
+    # -------------------------------------------------------------------------
+    #       Internal utils
+    # -------------------------------------------------------------------------
 
     def _get_token(self):
         '''
@@ -44,8 +47,12 @@ class Markus():
     
         self.token = token
 
+    # -------------------------------------------------------------------------
 
     def _get_assgn_id(self):
+        '''
+        Fetch the assignment id given the short identifier
+        '''
         if self.assgn_id is not None:
             return
 
@@ -60,8 +67,10 @@ class Markus():
         
         self.assgn_id = match[0]['id']
 
+    # -------------------------------------------------------------------------
 
     def _get_mapping(self):
+
         if self.mapping is not None:
             return
 
@@ -76,23 +85,51 @@ class Markus():
             self.mapping[group['group_name']] = group['id']
         
         return
-    
-    
-    def students(self):
-        self._get_mapping()
-        return self.mapping.keys()
 
-    def student_exists(self, student):
-        self._get_mapping()
-        return student in self.mapping
+    # -------------------------------------------------------------------------
 
     def _get_ffs(self, group_id):
+        '''
+        Gets and returns the feedback files for a group. Return value is of 
+        the form:
+                         { filename : file_id }
+        '''
         url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                f'groups/{group_id}/feedback_files.json')
         res = requests.get(url, data={}, headers=self.header).json()
         ret = {ff['filename']: ff['id'] for ff in res} 
         return ret
+    
+    # -------------------------------------------------------------------------
+    
+    def _accumulate_marks(self, mark_list):
+        '''
+        Given a list of marks for the test cases, accumulate them into a 
+        dictionary of:
+                        { criteria : mark }
+        using the configuration file saved internally
+        '''
+        from collections import defaultdict
+        breakdown = defaultdict(int)
+        for mark, test_case in zip(mark_list, self.cfg['tests']):
+            breakdown[test_case['criteria']] += mark
+        return breakdown
 
+    # -------------------------------------------------------------------------
+    #       Functions meant to be exposed
+    # -------------------------------------------------------------------------
+    
+    def students(self):
+        self._get_mapping()
+        return self.mapping.keys()
+    # -------------------------------------------------------------------------
+
+    def student_exists(self, student):
+        self._get_mapping()
+        return student in self.mapping
+
+    # -------------------------------------------------------------------------
+    
     def delete_reports(self, student):
         self._get_mapping()
         if student not in self.mapping:
@@ -107,6 +144,7 @@ class Markus():
             if int(res['code']) != 200:
                 print(f" ** Error: {res['description']}")
 
+    # -------------------------------------------------------------------------
 
     def upload_report(self, student, file_path):
         self._get_mapping()
@@ -135,6 +173,7 @@ class Markus():
             res = requests.post(url, data=data, headers=self.header).json()
         return 200 <= int(res['code']) <= 201
 
+    # -------------------------------------------------------------------------
 
     def download_submission(self, student, path):
         self._get_mapping()
@@ -159,13 +198,8 @@ class Markus():
             with open(f'{path}/{student}.zip', 'wb') as outfile:
                 outfile.write(res.content)
 
-    def _accumulate_marks(self, mark_list):
-        from collections import defaultdict
-        breakdown = defaultdict(int)
-        for mark, test_case in zip(mark_list, self.cfg['tests']):
-            breakdown[test_case['criteria']] += mark
-        return breakdown
-
+    # -------------------------------------------------------------------------
+    
     def upload_mark(self, student, mark_list):
         self._get_mapping()
         if student not in self.mapping:
@@ -178,6 +212,8 @@ class Markus():
               f'{group_id}/update_marks.json')
         res = requests.put(url, data=breakdown, headers=self.header).json()
         return int(res['code']) == 200
+    
+    # -------------------------------------------------------------------------
     
     def set_status(self, student, status):
         self._get_mapping()

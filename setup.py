@@ -1,14 +1,17 @@
+import os
+import shutil
 import setuptools
+
+os.makedirs('build/_scripts', exist_ok=True)
+shutil.copyfile('main.py', 'build/_scripts/marker')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='automark',
+    name='marker',
     version='1.0.0',
-    scripts=['automark', 'prepare', 'lms-download',
-             'lms-upload-marks', 'lms-upload-reports',
-             'lms-set-status'],
+    scripts=['build/_scripts/marker'],
     author="Mustafa Quraish",
     author_email="mustafa@cs.toronto.edu",
     description="A highly configurable auto-marker",
@@ -17,8 +20,7 @@ setuptools.setup(
     url="https://github.com/mustafaquraish/marker",
     packages=setuptools.find_packages(),
     py_modules=[
-        'testcases', 'utils', 'marksheet', 'config',
-        'lms'
+        'marker'
     ],
     install_requires=[
         'requests', 'pyyaml'

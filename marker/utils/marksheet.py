@@ -20,12 +20,18 @@ class Marksheet():
                 self.data[student] = None
     
     def marked_items(self):
+        '''
+        Return the student: mark_list pairs for all the marked students
+        '''
         for student in self.data:
             mark_list = self.data[student] 
             if mark_list is not None:
                 yield student, mark_list
 
     def items(self):
+        '''
+        Return all student: mark_list pairs
+        '''
         return self.data.items()
 
     def unmarked(self):
@@ -57,10 +63,3 @@ class Marksheet():
                     mark = ""
                 marksheet.write(f'{student}: {mark}\n')
 
-
-
-
-
-
-
-# -----------------------------------------------------------------------------
