@@ -9,6 +9,7 @@ from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
 
+
 def mark_submission(student, cfg):
     '''
     Given a student identifier, run all the test cases defined in the config
@@ -45,8 +46,8 @@ def mark_submission(student, cfg):
                     report_file.write(compile_log.read() + '\n')
 
             # -----------------------------------------------------------------
-            
-            # If a compilation check is set, run the command. If the check 
+
+            # If a compilation check is set, run the command. If the check
             # fails, then we don't have to run any of the tests.
             run_tests = True
             if cfg['compile_check'] is not None:
@@ -57,7 +58,6 @@ def mark_submission(student, cfg):
 
             # -----------------------------------------------------------------
 
-            
             for test_case in cfg['tests']:
                 # If compilation was fine, run test and append marks to array
                 if run_tests:
@@ -72,7 +72,7 @@ def mark_submission(student, cfg):
             total_out_of = sum(test['mark'] for test in cfg['tests'])
             total_mark = sum(mark_list)
 
-            report_file.write("-"*79 + '\n\n')
+            report_file.write("-" * 79 + '\n\n')
             report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
 
     print(f"- Marking {student} ... {total_mark} marks.", flush=True)
@@ -80,11 +80,11 @@ def mark_submission(student, cfg):
 
 # -----------------------------------------------------------------------------
 
+
 def main(args):
 
     cfg = config.load(args.config)
     cfg['force_recompile'] = args.recompile
-
 
     # Enter assignment directory
     with pushd(args.assgn_dir):
@@ -98,7 +98,7 @@ def main(args):
         if args.all:
             marksheet.add_students(sorted(os.listdir('candidates')))
 
-        # Or if the marksheet doesn't exist, ask the user if they want to make 
+        # Or if the marksheet doesn't exist, ask the user if they want to make
         # a new one for all of the submissions
         elif not os.path.exists(marksheet_path):
             # Prompt the user to create
@@ -108,11 +108,10 @@ def main(args):
                 marksheet.add_students(sorted(os.listdir('candidates')))
             else:
                 raise Exception("Marksheet not found or created")
-        
+
         # Marksheet exists! Just load it in
         else:
             marksheet.load(marksheet_path)
-    
 
         # If the no_parallels option is set, mark the submissions in serial
         if (args.no_parallel):
@@ -127,7 +126,7 @@ def main(args):
                 futures_dict = {}
                 for student in marksheet.unmarked():
                     future = executor.submit(mark_submission, student, cfg)
-                    futures_dict[future] = student 
+                    futures_dict[future] = student
 
                 # As the marks come in, get them and update to marksheet
                 for future in concurrent.futures.as_completed(futures_dict):

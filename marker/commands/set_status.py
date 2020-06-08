@@ -12,6 +12,8 @@ from ..utils.marksheet import Marksheet
 from ..lms import Markus
 
 # Handler to upload mark for each thread
+
+
 def status_handler(student, status, lms):
     '''
     Given a student's identifier, and mark, upload to LMS.
@@ -21,6 +23,7 @@ def status_handler(student, status, lms):
     print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
 
 # -----------------------------------------------------------------------------
+
 
 def main(args):
 
@@ -43,11 +46,11 @@ def main(args):
     marksheet.load(f'{args.assgn_dir}/{cfg["marksheet"]}')
 
     # -------------------------------------------------------------------------
-    
+
     # The following will trigger fetching the students before we multithread
     _ = lms.students()
 
     executor = concurrent.futures.ProcessPoolExecutor(20)
-    fs = [executor.submit(status_handler, student, args.status, lms) 
+    fs = [executor.submit(status_handler, student, args.status, lms)
           for student, _ in marksheet.items()]
     concurrent.futures.wait(fs)

@@ -1,6 +1,7 @@
 from .canvas import Canvas
 from .markus import Markus
 
+
 def LMS_Factory(config):
     if config['lms'].lower() == 'canvas':
         assert('course' in config), "Must have course ID in Config for Canvas"

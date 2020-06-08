@@ -34,5 +34,5 @@ def main(args):
     with concurrent.futures.ProcessPoolExecutor(20) as executor:
         for student, mark_list in marksheet.marked_items():
             executor.submit(upload_handler, student, mark_list, lms)
-    
+
     print("Done.")

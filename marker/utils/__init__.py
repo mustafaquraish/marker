@@ -16,10 +16,11 @@ def pushd(new_dir):
     finally:
         os.chdir(previous_dir)
 
+
 def run_command(cmd, timeout=None, output=subprocess.DEVNULL):
     '''
-    Run the command `cmd` in the current working directory, and return the 
-    status.The command is run for a maximum of `timeout` seconds, and the 
+    Run the command `cmd` in the current working directory, and return the
+    status.The command is run for a maximum of `timeout` seconds, and the
     stdout/stderr are redirected to `output`.
 
     Returns: Either

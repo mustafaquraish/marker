@@ -34,7 +34,7 @@ class Markus():
         token_path = f"{Path.home()}/.markus.tokens"
         if os.path.exists(token_path):
             lst = [l.strip().split(",") for l in open(token_path).readlines()]
-            tokens_dict = { line[0]:line[1] for line in lst }
+            tokens_dict = {line[0]: line[1] for line in lst}
             if self.base_url in tokens_dict:
                 self.token = tokens_dict[self.base_url]
                 return
@@ -44,7 +44,7 @@ class Markus():
         if 'n' not in prompt.lower():
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')
-    
+
         self.token = token
 
     # -------------------------------------------------------------------------
@@ -58,13 +58,13 @@ class Markus():
 
         url = (f'{self.base_url}/api/assignments.json')
         res = requests.get(url, data={}, headers=self.header).json()
-        
+
         match = filter(lambda a: a['short_identifier'] == self.assignment, res)
         match = list(match)
 
         if len(match) != 1:
             raise ValueError("Invalid course short identifier.")
-        
+
         self.assgn_id = match[0]['id']
 
     # -------------------------------------------------------------------------
@@ -75,7 +75,7 @@ class Markus():
             return
 
         self._get_assgn_id()
-        
+
         self.mapping = {}
 
         url = (f'{self.base_url}/api/assignments/{self.assgn_id}'
@@ -83,28 +83,28 @@ class Markus():
         res = requests.get(url, data={}, headers=self.header).json()
         for group in res:
             self.mapping[group['group_name']] = group['id']
-        
+
         return
 
     # -------------------------------------------------------------------------
 
     def _get_ffs(self, group_id):
         '''
-        Gets and returns the feedback files for a group. Return value is of 
+        Gets and returns the feedback files for a group. Return value is of
         the form:
                          { filename : file_id }
         '''
         url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                f'groups/{group_id}/feedback_files.json')
         res = requests.get(url, data={}, headers=self.header).json()
-        ret = {ff['filename']: ff['id'] for ff in res} 
+        ret = {ff['filename']: ff['id'] for ff in res}
         return ret
-    
+
     # -------------------------------------------------------------------------
-    
+
     def _accumulate_marks(self, mark_list):
         '''
-        Given a list of marks for the test cases, accumulate them into a 
+        Given a list of marks for the test cases, accumulate them into a
         dictionary of:
                         { criteria : mark }
         using the configuration file saved internally
@@ -118,7 +118,7 @@ class Markus():
     # -------------------------------------------------------------------------
     #       Functions meant to be exposed
     # -------------------------------------------------------------------------
-    
+
     def students(self):
         self._get_mapping()
         return self.mapping.keys()
@@ -129,7 +129,7 @@ class Markus():
         return student in self.mapping
 
     # -------------------------------------------------------------------------
-    
+
     def delete_reports(self, student):
         self._get_mapping()
         if student not in self.mapping:
@@ -151,15 +151,15 @@ class Markus():
         if student not in self.mapping:
             raise ValueError(f"{student} not in the course.")
         group_id = self.mapping[student]
-        
+
         fname = os.path.basename(file_path)
         existing_ffs = self._get_ffs(group_id)
-        
+
         if fname in existing_ffs:
             url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                    f'groups/{group_id}/feedback_files/{existing_ffs[fname]}'
                    f'.json')
-            data = { 'file_content': open(file_path, 'rb').read() }
+            data = {'file_content': open(file_path, 'rb').read()}
             res = requests.put(url, data=data, headers=self.header).json()
         else:
             import mimetypes
@@ -183,12 +183,12 @@ class Markus():
 
         url = (f'{self.base_url}/api/assignments/{self.assgn_id}/'
                f'groups/{group_id}/submission_files.json')
-        
+
         collected = ('collected' in self.cfg and self.cfg['collected'])
 
         if 'file_names' in self.cfg:
             for fname in self.cfg['file_names']:
-                data = { 'filename': fname, 'collected': collected}
+                data = {'filename': fname, 'collected': collected}
                 res = requests.get(url, data=data, headers=self.header)
                 with open(f'{path}/{fname}', 'wb') as outfile:
                     outfile.write(res.content)
@@ -199,7 +199,7 @@ class Markus():
                 outfile.write(res.content)
 
     # -------------------------------------------------------------------------
-    
+
     def upload_mark(self, student, mark_list):
         self._get_mapping()
         if student not in self.mapping:
@@ -208,23 +208,22 @@ class Markus():
 
         breakdown = self._accumulate_marks(mark_list)
 
-        url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
-              f'{group_id}/update_marks.json')
+        url = (f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
+               f'{group_id}/update_marks.json')
         res = requests.put(url, data=breakdown, headers=self.header).json()
         return int(res['code']) == 200
-    
+
     # -------------------------------------------------------------------------
-    
+
     def set_status(self, student, status):
         self._get_mapping()
         if student not in self.mapping:
             raise ValueError(f"{student} not in the course.")
         group_id = self.mapping[student]
 
-        url =(f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
-              f'{group_id}/update_marking_state.json')
-        
-        data = { 'marking_state': status }
+        url = (f'{self.base_url}/api/assignments/{self.assgn_id}/groups/'
+               f'{group_id}/update_marking_state.json')
+
+        data = {'marking_state': status}
         res = requests.put(url, data=data, headers=self.header).json()
         return int(res['code']) == 200
-

@@ -9,19 +9,20 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.marksheet import Marksheet
 
+
 def prepare_handler(student, cfg):
     '''
     Given a student's identifier, Copies over all the files to their directory
-    and compiles them. Assumes that the working directory is the root of the 
+    and compiles them. Assumes that the working directory is the root of the
     assignment directory.
     '''
-    st_path = f'candidates/{student}' 
+    st_path = f'candidates/{student}'
     if not os.path.isdir(st_path):
         return
 
     # Copy over the extra testing files into the student directory
     run_command(f"cp -rf extra-files/* {st_path}/")
-    
+
     # Go into testing directory, run the compile command and output the
     # logs to the file decribed in cthe configiguration
     testing_path = f'{st_path}/{cfg["testing_dir"]}'
@@ -31,6 +32,7 @@ def prepare_handler(student, cfg):
             run_command(cfg['compile'], output=log)
 
 # -----------------------------------------------------------------------------
+
 
 def main(args):
 
@@ -55,4 +57,3 @@ def main(args):
         marksheet.save(cfg['marksheet'])
 
     print("Done.")
-

@@ -7,6 +7,7 @@ from ..utils import pushd
 from ..utils import config
 from ..lms import LMS_Factory
 
+
 def upload_handler(student, lms, cfg):
     '''
     Given a student's identifier, upload their report file to LMS. Assumes
@@ -31,7 +32,7 @@ def main(args):
     lms = LMS_Factory(cfg)
 
     with pushd(args.assgn_dir):
-        
+
         # The following will trigger fetching the students
         _ = lms.students()
 

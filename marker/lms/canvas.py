@@ -58,10 +58,10 @@ class Canvas():
         self.mapping = {}
 
         while (res != []):
-            data = { 
-                'enrollment_type': 'student', 
-                'per_page': 100, 
-                'page': page, 
+            data = {
+                'enrollment_type': 'student',
+                'per_page': 100,
+                'page': page,
             }
             res = requests.get(url, data=data, headers=self.header).json()
 
@@ -79,7 +79,7 @@ class Canvas():
                     raise Exception("No suitable column found in canvas data")
             page += 1
             print(".", end="", flush=True)
-        
+
         print()
         return
 
@@ -96,12 +96,12 @@ class Canvas():
     def student_exists(self, student):
         self._get_mapping()
         return student in self.mapping
-        
+
     # -------------------------------------------------------------------------
 
     def upload_report(self, student_id, report_path):
         '''
-        Upload a file to the comments section of a given assignment for the 
+        Upload a file to the comments section of a given assignment for the
         given student_id
         '''
         self._get_mapping()
@@ -159,7 +159,7 @@ class Canvas():
         url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
                f"assignments/{self.assgn_id}/submissions/{canvas_id}")
         res = requests.get(url, data={}, headers=self.header).json()
-        
+
         if res.get('error') or res.get('errors'):
             return False
         if ('attachments' not in res or len(res['attachments']) < 1):
@@ -167,7 +167,7 @@ class Canvas():
 
         file_url = res['attachments'][-1]['url']
         res = requests.get(file_url, data={}, headers=self.header)
-        
+
         fname = self.cfg['file_name']
         # Assuming no errors returned for now...
         open(f'{student_dir}/{fname}', 'wb').write(res.content)
@@ -175,7 +175,7 @@ class Canvas():
         return True
 
     # -------------------------------------------------------------------------
-    
+
     def upload_mark(self, student_id, mark_list):
         self._get_mapping()
         if student_id not in self.mapping:
