@@ -55,9 +55,5 @@ pip3 install dist/*
 
 ---
 
-## How to use
-
-For details on what arguments are expected, run with the `-h` flag.
-
-Full documentation coming soon...
+[Full Documentation available in the wiki](https://github.com/mustafaquraish/marker/wiki)
 
