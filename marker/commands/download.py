@@ -9,13 +9,13 @@ from ..lms import LMS_Factory
 
 
 # Handler to download submission for each process
-def download_handler(candidates_dir, student, lms):
+def download_handler(student, lms):
     '''
     Given a student's identifier, make their directory and download file(s).
     '''
     print(f"- Getting {student} ...", flush=True)
-    os.makedirs(f'{candidates_dir}/{student}', exist_ok=True)
-    lms.download_submission(student, f'{candidates_dir}/{student}')
+    os.makedirs(student, exist_ok=True)
+    lms.download_submission(student, student)
 
 # -----------------------------------------------------------------------------
 

@@ -1,5 +1,6 @@
 import yaml
-import os 
+import os
+import sys 
     
 def set_if_not(config, field, default):
     if field not in config or config[field] is None:
@@ -43,7 +44,10 @@ def set_default_values(config):
 
 
 def load(cfg_path):
-    assert(os.path.exists(cfg_path))
+    if not os.path.exists(cfg_path):
+        print(f"Error: {cfg_path} does not exist.")
+        sys.exit(1)
+        
     with open(cfg_path) as cfg_file:
         config = yaml.safe_load(cfg_file)
     set_default_values(config)    
