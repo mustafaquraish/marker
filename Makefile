@@ -9,7 +9,7 @@ install: build
 reinstall: clean uninstall install
 
 uninstall:
-	yes | pip3 uninstall marker
+	yes | pip3 uninstall automark
 
 clean:
 	rm -rf *.egg-info
