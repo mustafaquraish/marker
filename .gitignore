@@ -6,5 +6,5 @@
 
 build/*
 dist/*
-automark.egg*
+*.egg-info
 tests/
