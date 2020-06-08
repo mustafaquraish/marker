@@ -1,35 +1,60 @@
-# Automark
+# Marker
 
-Utilities to help automate code testing, and interfacing with the platform used to submit code. Currently, the following are supported:
+A marking utility to help automate code testing, and interfacing with the submission platform. Currently, the following platforms are supported:
 
 - Canvas
 - MarkUs
 
 
-This package installs the following scripts:
+This package installs the program `marker`. It supports the following commands:
 
-- `lms-download`: Downloads files from the given LMS.
-- `prepare`: Copies needed files into student directories, compiles code.
-- `automark`: Runs all the test cases, creates logs and compiles marks.
-- `lms-upload-marks`: Uploads the student marks to the LMS.
-- `lms-upload-reports`: Uploads the testing logs to the LMS for the student.
-- `lms-set-status`: Sets the marking state of the submission (MarkUs only).
+- `marker download`: Downloads files from the given LMS.
+- `marker prepare`: Copies needed files into student directories, compiles code.
+- `marker run`: Runs all the test cases, creates logs and compiles marks.
+- `marker upload-marks`: Uploads the student marks to the LMS.
+- `marker upload-reports`: Uploads the testing logs to the LMS for the student.
+- `marker set-status`: Sets the marking state of the submission (MarkUs only).
 
 ---
 
 ## How to install
 
+### - Using PIP
+
 You can install these scripts with `pip` (or `pip3`) with the following:
 
 ```sh
-pip3 install automark 
+pip3 install marker 
 ```
 
 Make sure you have the default installation location of `pip` in your `PATH` to be able to use the scripts directly.
 
+### - Build from source
+
+First, clone this repository to your machine:
+
+```sh
+git clone https://github.com/mustafaquraish/marker
+```
+
+Then, go into the cloned repo and use the Makefile to build and install
+```sh
+cd marker
+make install
+```
+
+Alternatively, use the following commands to build and install yourself if your preferred `python` and `pip` executables are named differently:
+
+```
+python3 setup.py bdist_wheel
+pip3 install dist/*     
+```
+
 ---
 
 ## How to use
+
+For details on what arguments are expected, run with the `-h` flag.
 
 Full documentation coming soon...
 
