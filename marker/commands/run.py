@@ -32,17 +32,19 @@ def mark_submission(student, cfg):
             # -----------------------------------------------------------------
 
             # Force recompile if needed
-            if cfg['force_recompile']:
-                with open(cfg['compile_log'], 'w') as log:
-                    run_command(cfg['compile'], timeout=10, output=log)
+            if cfg['force_recompile'] and (cfg['compile'] is not None) :
+                    with open(cfg['compile_log'], 'w') as log:
+                        run_command(cfg['compile'], timeout=10, output=log)
 
             # -----------------------------------------------------------------
 
-            # Add the compile log if needed
+            # If the compile log exists, include it in the report based on the
+            # provided option in the config file.
             if cfg['include_compile_log']:
                 report_file.write('- Compiling code ...\n\n')
-                with open(cfg['compile_log']) as compile_log:
-                    report_file.write(compile_log.read() + '\n')
+                if os.path.isfile(cfg['compile_log']):
+                    with open(cfg['compile_log']) as compile_log:
+                        report_file.write(compile_log.read() + '\n')
 
             # -----------------------------------------------------------------
             
