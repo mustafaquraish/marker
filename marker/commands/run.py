@@ -33,8 +33,8 @@ def mark_submission(student, cfg):
 
             # Force recompile if needed
             if cfg['force_recompile'] and (cfg['compile'] is not None) :
-                    with open(cfg['compile_log'], 'w') as log:
-                        run_command(cfg['compile'], timeout=10, output=log)
+                with open(cfg['compile_log'], 'w') as log:
+                    run_command(cfg['compile'], timeout=10, output=log)
 
             # -----------------------------------------------------------------
 
