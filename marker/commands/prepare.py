@@ -22,13 +22,14 @@ def prepare_handler(student, cfg):
     # Copy over the extra testing files into the student directory
     run_command(f"cp -rf extra-files/* {st_path}/")
     
-    # Go into testing directory, run the compile command and output the
-    # logs to the file decribed in cthe configiguration
-    testing_path = f'{st_path}/{cfg["testing_dir"]}'
-    with pushd(testing_path):
-        print(f"- Compiling {student} ...", flush=True)
-        with open(cfg['compile_log'], 'w') as log:
-            run_command(cfg['compile'], output=log)
+    # If a compilation command is set, go into testing directory, and run it. 
+    # Output the logs to the given file.
+    if cfg['compile'] is not None:
+        testing_path = f'{st_path}/{cfg["testing_dir"]}'
+        with pushd(testing_path):
+            print(f"- Compiling {student} ...", flush=True)
+            with open(cfg['compile_log'], 'w') as log:
+                run_command(cfg['compile'], output=log)
 
 # -----------------------------------------------------------------------------
 
