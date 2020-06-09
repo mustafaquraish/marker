@@ -8,22 +8,19 @@ def set_if_not(config, field, default):
 
 
 def set_default_values(config):
-    assert('lms' in config), "Must have an LMS in the config"
-    assert('base_url' in config), "Must have base url for LMS in config"
-    assert('assignment' in config), "Must have assignment ID in config"
-
     set_if_not(config, 'default_criteria', 'tests')    # For Markus
     set_if_not(config, 'allow_late', False)            # For Canvas
-
+    
     set_if_not(config, 'imports', [])
-    set_if_not(config, 'compile', 'echo Compiling...')
-    set_if_not(config, 'compile_log', 'compile.log')
-    set_if_not(config, 'compile_check', None)
-    set_if_not(config, 'testing_dir', ".")
-
+    
     set_if_not(config, 'marksheet', 'marksheet.yml')
     set_if_not(config, 'report', 'report.txt')
     set_if_not(config, 'report_header', None)
+    set_if_not(config, 'testing_dir', ".")
+
+    set_if_not(config, 'compile', None)
+    set_if_not(config, 'compile_log', 'compile.log')
+    set_if_not(config, 'compile_check', None)
     set_if_not(config, 'include_compile_log', True)
     
     set_if_not(config, 'tests', [])
