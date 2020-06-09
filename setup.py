@@ -3,7 +3,7 @@ import shutil
 import setuptools
 
 os.makedirs('build/_scripts', exist_ok=True)
-shutil.copyfile('main.py', 'build/_scripts/marker')
+shutil.copyfile('marker/main.py', 'build/_scripts/marker')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
