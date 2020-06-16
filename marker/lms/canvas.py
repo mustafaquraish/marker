@@ -103,7 +103,7 @@ class Canvas():
         # Initial default that is earlier than all dates
         latest_date = "0000-00-00T00:00:00Z"
 
-        for sub in submission.submission_history:
+        for sub in submission['submission_history']:
             # Want newest submission that is either not late or allowed to be
             if (not sub["late"]) or self.cfg["allow_late"]:
                 if sub["submitted_at"] > latest_date:
