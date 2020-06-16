@@ -58,10 +58,10 @@ class Canvas():
         self.mapping = {}
 
         while (res != []):
-            data = { 
-                'enrollment_type': 'student', 
-                'per_page': 100, 
-                'page': page, 
+            data = {
+                'enrollment_type': 'student',
+                'per_page': 100,
+                'page': page,
             }
             res = requests.get(url, data=data, headers=self.header).json()
 
@@ -79,9 +79,39 @@ class Canvas():
                     raise Exception("No suitable column found in canvas data")
             page += 1
             print(".", end="", flush=True)
-        
+
         print()
         return
+
+    # -------------------------------------------------------------------------
+
+    def _get_file_url(self, submission):
+        file_url = None
+
+        if not submission["late"] or self.cfg["allow_late"]:
+            if "attachments" in submission:
+                # Assuming only one attachment for now
+                file_url = submission["attachments"][0]["url"]
+
+        if file_url is not None:
+            return file_url
+
+        # If we're here need to look at submission history
+        if "submission_history" not in submission:
+            return None
+
+        # Initial default that is earlier than all dates
+        latest_date = "0000-00-00T00:00:00Z"
+
+        for sub in submission.submission_history:
+            # Want newest submission that is either not late or allowed to be
+            if (not sub["late"]) or self.cfg["allow_late"]:
+                if sub["submitted_at"] > latest_date:
+                    if "attachments" in sub:
+                        file_url = sub["attachments"][0]["url"]
+                        latest_date = sub["submitted_at"]
+
+        return file_url
 
     # -------------------------------------------------------------------------
     #       Functions meant to be exposed
@@ -93,10 +123,16 @@ class Canvas():
 
     # -------------------------------------------------------------------------
 
+    def get_mapping(self):
+        self._get_mapping()
+        return self.mapping
+
+    # -------------------------------------------------------------------------
+
     def student_exists(self, student):
         self._get_mapping()
         return student in self.mapping
-        
+
     # -------------------------------------------------------------------------
 
     def upload_report(self, student_id, report_path):
@@ -158,24 +194,27 @@ class Canvas():
 
         url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
                f"assignments/{self.assgn_id}/submissions/{canvas_id}")
-        res = requests.get(url, data={}, headers=self.header).json()
-        
+        data = {"include[]": "submission_history"}
+        res = requests.get(url, data=data, headers=self.header).json()
+
         if res.get('error') or res.get('errors'):
             return False
-        if ('attachments' not in res or len(res['attachments']) < 1):
+
+        file_url = self._get_file_url(res)
+
+        # Found no submissions.
+        if file_url is None:
             return False
 
-        file_url = res['attachments'][-1]['url']
         res = requests.get(file_url, data={}, headers=self.header)
-        
-        fname = self.cfg['file_name']
         # Assuming no errors returned for now...
-        open(f'{student_dir}/{fname}', 'wb').write(res.content)
+        file_name = self.cfg["file_name"]
+        open(f'{student_dir}/{file_name}', 'wb').write(res.content)
 
         return True
 
     # -------------------------------------------------------------------------
-    
+
     def upload_mark(self, student_id, mark_list):
         self._get_mapping()
         if student_id not in self.mapping:
@@ -195,3 +234,5 @@ class Canvas():
             return False
 
         return True
+
+# -----------------------------------------------------------------------------
