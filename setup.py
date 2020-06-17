@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='automark',
-    version='1.0.3',
+    version='1.0.4',
     scripts=['build/_scripts/marker'],
     author="Mustafa Quraish",
     license="MIT",
