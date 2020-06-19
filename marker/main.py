@@ -97,7 +97,7 @@ parser_sst.add_argument("assgn_dir", nargs='?', default=os.getcwd(),
 parser_sst.add_argument("--config", default=None, metavar="cfg",
                         help="Location of configuration file, if not "
                         "config.yml in assgn_dir")
-parser_sst.set_defaults(func='set_status')
+parser_sst.set_defaults(func=set_status.main)
 
 # -----------------------------------------------------------------------------
 
