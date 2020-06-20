@@ -19,11 +19,15 @@ This package installs the program `marker`. It supports the following commands:
 
 ## How to install
 
+There are 2 ways to install this marker. The recommended way of doing this is to install from `pip`:
+
 ### - Using PIP
 
 ```
 pip install automark
 ```
+
+Alternatively, if you want to develop, you will need to build from source:
 
 ### - Build from source
 
