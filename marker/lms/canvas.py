@@ -26,22 +26,25 @@ class Canvas():
 
     def _get_token(self):
         '''
-        Try to load quercus token from file. If it doesn't exist, prompt
+        Try to load Canvas token from file. If it doesn't exist, prompt
         the user and give them an option to save it locally.
         '''
-
         from pathlib import Path
 
-        token_path = f"{Path.home()}/.canvas.token"
-        try:
-            with open(token_path) as token_file:
-                token = token_file.read().strip()
-        except FileNotFoundError:
-            token = input("Enter Canvas Token: ").strip()
-            prompt = input(f"Save token in {token_path} ?: [Y]/n")
-            if "n" not in prompt.lower():
-                with open(token_path, 'w') as token_file:
-                    token_file.write(token)
+        token_path = f"{Path.home()}/.canvas.tokens"
+        if os.path.exists(token_path):
+            lst = [line.split(",") for line in open(token_path).readlines()]
+            tokens_dict = { url.strip(): token.strip() for url, token in lst }
+            if self.base_url in tokens_dict:
+                self.token = tokens_dict[self.base_url]
+                return
+
+        token = input("Enter Canvas Token: ").strip()
+        prompt = input(f"Save token in {token_path} ?: [Y]/n")
+        if 'n' not in prompt.lower():
+            with open(token_path, 'a') as token_file:
+                token_file.write(f'{self.base_url},{token}\n')
+    
         self.token = token
 
     # -------------------------------------------------------------------------

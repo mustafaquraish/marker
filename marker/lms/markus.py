@@ -26,15 +26,15 @@ class Markus():
 
     def _get_token(self):
         '''
-        Try to load quercus token from file. If it doesn't exist, prompt
+        Try to load MarkUs token from file. If it doesn't exist, prompt
         the user and give them an option to save it locally.
         '''
         from pathlib import Path
 
         token_path = f"{Path.home()}/.markus.tokens"
         if os.path.exists(token_path):
-            lst = [l.strip().split(",") for l in open(token_path).readlines()]
-            tokens_dict = { line[0]:line[1] for line in lst }
+            lst = [line.split(",") for line in open(token_path).readlines()]
+            tokens_dict = { url.strip(): token.strip() for url, token in lst }
             if self.base_url in tokens_dict:
                 self.token = tokens_dict[self.base_url]
                 return
