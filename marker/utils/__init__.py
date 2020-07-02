@@ -2,7 +2,7 @@
 Just contains some general utilities needed for all the scripts.
 '''
 
-import os
+import os, signal
 import subprocess
 from contextlib import contextmanager
 
@@ -27,15 +27,18 @@ def run_command(cmd, timeout=None, output=subprocess.DEVNULL):
             OR
         ('timeout', None)
     '''
-    try:
-        exit_status = subprocess.call(
-            cmd,
-            stdout=output,
-            stderr=output,
-            timeout=timeout,
-            shell=True
-        )
-        return ('exit', exit_status)
+    if timeout is not None:
+        cmd = f"timeout {timeout} bash -c '{cmd}'"
 
-    except subprocess.TimeoutExpired:
+    exit_status = subprocess.call(
+        cmd,
+        stdout=output,
+        stderr=output,
+        shell=True
+    )
+
+    # The exit code from `timeout` is 124 if process times out
+    if exit_status == 124:
         return ('timeout', None)
+    else:
+        return ('exit', exit_status)
