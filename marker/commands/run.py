@@ -2,12 +2,14 @@
 
 import os
 import sys
+import subprocess
 
 from ..utils import config
 from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
+
 
 def mark_submission(student, cfg):
     '''
@@ -32,7 +34,7 @@ def mark_submission(student, cfg):
             # -----------------------------------------------------------------
 
             # Force recompile if needed
-            if cfg['force_recompile'] and (cfg['compile'] is not None) :
+            if cfg['force_recompile'] and (cfg['compile'] is not None):
                 with open(cfg['compile_log'], 'w') as log:
                     run_command(cfg['compile'], timeout=10, output=log)
 
@@ -58,7 +60,6 @@ def mark_submission(student, cfg):
                     run_tests = False
 
             # -----------------------------------------------------------------
-
             
             for test_case in cfg['tests']:
                 # If compilation was fine, run test and append marks to array
@@ -70,9 +71,24 @@ def mark_submission(student, cfg):
 
             # -----------------------------------------------------------------
 
+            # If penalties are set to be applied based on the number of
+            # warnings during compilation.
+            mark_adjustment = 0
+            if cfg['penalties_cmd'] is not None:
+                # Get the number of marks to be deducted.
+                output = subprocess.check_output(
+                    cfg['penalties_cmd'],
+                    shell=True)
+                # Decode the output and cast it to an int.
+                mark_adjustment = int(output.decode("utf-8"))
+
+            # -----------------------------------------------------------------
+
             # Output the total mark to the report for completeness
             total_out_of = sum(test['mark'] for test in cfg['tests'])
             total_mark = sum(mark_list)
+            # Adjust the marks based off the penalties.
+            total_mark += mark_adjustment
 
             report_file.write("-"*79 + '\n\n')
             report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
@@ -82,11 +98,11 @@ def mark_submission(student, cfg):
 
 # -----------------------------------------------------------------------------
 
+
 def main(args):
 
     cfg = config.load(args.config)
     cfg['force_recompile'] = args.recompile
-
 
     # Enter assignment directory
     with pushd(args.assgn_dir):
@@ -114,10 +130,9 @@ def main(args):
         # Marksheet exists! Just load it in
         else:
             marksheet.load(marksheet_path)
-    
 
         # If the no_parallels option is set, mark the submissions in serial
-        if (args.no_parallel):
+        if args.no_parallel:
             for student in marksheet.unmarked():
                 marks_list = mark_submission(student, cfg)
                 marksheet.update(student, marks_list)
