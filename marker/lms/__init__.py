@@ -16,4 +16,5 @@ def LMS_Factory(config):
         return Canvas(config)
     
     elif config['lms'].lower() == 'markus':
+        print("For now, async support with markus doesn't exist. Please use an earlier version of marker")
         return Markus(config)

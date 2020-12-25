@@ -32,7 +32,7 @@ def mark_submission(student, cfg):
             # -----------------------------------------------------------------
 
             # Force recompile if needed
-            if cfg['force_recompile'] and (cfg['compile'] is not None) :
+            if cfg['recompile'] and (cfg['compile'] is not None) :
                 with open(cfg['compile_log'], 'w') as log:
                     run_command(cfg['compile'], timeout=10, output=log)
 
@@ -40,7 +40,7 @@ def mark_submission(student, cfg):
 
             # If the compile log exists, include it in the report based on the
             # provided option in the config file.
-            if cfg['include_compile_log']:
+            if cfg['compile'] and cfg['include_compile_log']:
                 report_file.write('- Compiling code ...\n\n')
                 if os.path.isfile(cfg['compile_log']):
                     with open(cfg['compile_log']) as compile_log:
@@ -82,23 +82,21 @@ def mark_submission(student, cfg):
 
 # -----------------------------------------------------------------------------
 
-def main(args):
-
-    cfg = config.load(args.config)
-    cfg['force_recompile'] = args.recompile
-
+def run_handler(cfg, student):
 
     # Enter assignment directory
-    with pushd(args.assgn_dir):
+    with pushd(cfg['assgn_dir']):
 
         # Create a new marksheet, we will initialize it below
         marksheet = Marksheet()
         marksheet_path = cfg['marksheet']
 
+        all_students = sorted(os.listdir('candidates'))
+
         # If we want to force-remark all submissions, don't load the marksheet
         # but just create a new one
-        if args.all:
-            marksheet.add_students(sorted(os.listdir('candidates')))
+        if cfg['all']:
+            marksheet.add_students(all_students)
 
         # Or if the marksheet doesn't exist, ask the user if they want to make 
         # a new one for all of the submissions
@@ -107,40 +105,33 @@ def main(args):
             create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
             # Add all the students in the `candidates` directory to marksheet
             if "n" not in create:
-                marksheet.add_students(sorted(os.listdir('candidates')))
+                marksheet.add_students(all_students)
             else:
-                raise Exception("Marksheet not found or created")
+                print("Marksheet not found or created. Stopping.")
+                return
         
         # Marksheet exists! Just load it in
         else:
             marksheet.load(marksheet_path)
     
 
-        # If the no_parallels option is set, mark the submissions in serial
-        if (args.no_parallel):
-            for student in marksheet.unmarked():
-                marks_list = mark_submission(student, cfg)
-                marksheet.update(student, marks_list)
-
-        # Otherwise, mark them all in parallel.
+        # If a specific student has been specified, re-run for only them.
+        # Just reset the marksheet
+        if student is not None:
+            if student not in all_students:
+                print(student, "submission directory doesn't exist. Stopping.")
+                return
+            students_to_mark = [ student ]
         else:
-            import concurrent.futures
-            with concurrent.futures.ProcessPoolExecutor(20) as executor:
-                futures_dict = {}
-                for student in marksheet.unmarked():
-                    future = executor.submit(mark_submission, student, cfg)
-                    futures_dict[future] = student 
+            students_to_mark = marksheet.unmarked()
 
-                # As the marks come in, get them and update to marksheet
-                for future in concurrent.futures.as_completed(futures_dict):
-                    student = futures_dict[future]
-                    try:
-                        marks_list = future.result()
-                        marksheet.update(student, marks_list)
-                    except Exception as exc:
-                        print(f'Error when marking {student}: {exc}')
-
-        # Finally, save (and overwrite) the marksheet
-        marksheet.save(marksheet_path)
+        # Run the marker!
+        for student in students_to_mark:
+            try:
+                marks_list = mark_submission(student, cfg)
+                marksheet[student] = marks_list
+                marksheet.save(marksheet_path)
+            except Exception as e:
+                print(f'Error when marking {student}: {e}')
 
     print("Done.")

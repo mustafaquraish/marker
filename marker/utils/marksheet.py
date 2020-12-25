@@ -1,8 +1,15 @@
 import yaml
 
 class Marksheet():
-    def __init__(self):
-        self.data = {}
+    def __init__(self, marksheet_path=None):
+        '''
+        Initialize an empty marksheet or with the contents of a file
+        '''
+        if marksheet_path is None:
+            self.data = {}
+        else:
+            with open(marksheet_path) as marksheet:
+                self.data = yaml.safe_load(marksheet)
 
     def load(self, marksheet_path):
         '''
@@ -33,6 +40,14 @@ class Marksheet():
         Return all student: mark_list pairs
         '''
         return self.data.items()
+
+    def __getitem__(self, student):
+        if student not in self.data or self.data[student] is None:
+            return []
+        return self.data[student]
+
+    def __setitem__(self, student, mark_list):
+        self.data[student] = mark_list
 
     def unmarked(self):
         '''
