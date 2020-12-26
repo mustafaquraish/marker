@@ -9,7 +9,6 @@ import sys
 import cmd2
 import os
 import textwrap
-# from build.lib.marker import Marker
 from marker import Marker
 from marker.utils.log import console
 from cmd2 import ansi
@@ -156,6 +155,8 @@ def main():
     # Handle remaining command line args to make this behave like a regular CLI
     if unknown != []:
         command = " ".join(unknown)
+        # Dashed and underscores are both fine for CLI
+        command = command.replace("-", "_")
         console.log(f"Running command: [red]{command}")
         sys.argv.append(command)    
         sys.argv.append("quit")    
