@@ -7,6 +7,7 @@ import asyncio
 from ..utils import pushd
 from ..utils import config
 from ..lms import LMS_Factory
+from ..utils.log import progress_futures, console
 
 async def upload_report_dispatch(lms, student=None):
     '''
@@ -14,13 +15,14 @@ async def upload_report_dispatch(lms, student=None):
     the working directory is the root of the assignment directory
     '''
     students = sorted(os.listdir()) if student is None else [ student ]
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=10)
+    console.log("Sending requests, this may take a while")
+    async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [lms.upload_report(session, student) for student in students]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await progress_futures(tasks, "Uploading reports")
 
 
 def upload_report_handler(cfg, lms, student):
     candidates_dir = f'{cfg["assgn_dir"]}/candidates'
     with pushd(candidates_dir):
         asyncio.run(upload_report_dispatch(lms, student))
-    print("Done.")

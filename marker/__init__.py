@@ -1,6 +1,7 @@
 from .utils import config
 from .utils.marksheet import Marksheet
 from .utils import pushd
+from .utils.log import console
 
 from .lms import LMS_Factory
 
@@ -10,6 +11,7 @@ from .commands.run import run_handler
 from .commands.upload_marks import upload_mark_handler
 from .commands.upload_reports import upload_report_handler
 from .commands.delete_reports import delete_report_handler
+from .commands.set_status import set_status_handler
 
 from functools import cached_property
 
@@ -17,17 +19,17 @@ import asyncio
 
 class Marker():
     def __init__(self, args):
-        print("Loading config...")
         config_path = args["config"]
         self.cfg = config.load(config_path)
         self.cfg.update(args)
+        console.log("Config loaded")
     
     @cached_property
     def lms(self):
         return LMS_Factory(self.cfg)
 
-    def download_submissions(self, student=None):
-        return download_handler(self.cfg, self.lms, student)
+    def download_submissions(self, student=None, late=False):
+        return download_handler(self.cfg, self.lms, student, late)
 
     def prepare(self, student=None):
         return prepare_handler(self.cfg, student)
@@ -43,6 +45,10 @@ class Marker():
         return run_handler(new_cfg, student)
     
     def upload_reports(self, student=None):
+        if self.cfg["lms"] == "markus":
+            if not console.ask("Uploading reports on MarkUs is untested. Continue?"):
+                console.error("Stopped.")
+                return None
         return upload_report_handler(self.cfg, self.lms, student)
 
     def upload_marks(self, student=None):
@@ -50,3 +56,6 @@ class Marker():
 
     def delete_reports(self, student=None):
         return delete_report_handler(self.cfg, self.lms, student)
+
+    def set_status(self, status, student=None):
+        return set_status_handler(self.lms, status, student)

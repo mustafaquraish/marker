@@ -6,6 +6,7 @@ Utilities related to interfacing with Canvas
 import requests
 import aiofiles
 from functools import cached_property
+from ..utils.log import console
 import os
 
 class Canvas():
@@ -38,11 +39,12 @@ class Canvas():
             if self.base_url in tokens_dict:
                 return tokens_dict[self.base_url]
 
-        token = input("Enter Canvas Token: ").strip()
-        prompt = input(f"Save token in {token_path} ?: [Y]/n")
-        if 'n' not in prompt.lower():
+        token = console.input("[yellow]- Enter Canvas Token: ").strip()
+        save = console.ask(f"[yellow]- Save token in [red]{token_path}[/red]?", default=true)
+        if save:
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')
+            console.log("Access token saved")
     
         return token
 
@@ -51,7 +53,7 @@ class Canvas():
     @cached_property
     def mapping(self):
 
-        print("- Fetching course users...", end="", flush=True)
+        console.log("Fetching course users")
 
         url = f'{self.base_url}/api/v1/courses/{self.course_id}/users'
         page, res = 1, None
@@ -79,9 +81,7 @@ class Canvas():
                 else:
                     raise Exception("No suitable column found in canvas data")
             page += 1
-            print(".", end="", flush=True)
 
-        print()
         return mapping
 
     # -------------------------------------------------------------------------
@@ -118,53 +118,57 @@ class Canvas():
     #       Functions meant to be exposed
     # -------------------------------------------------------------------------
 
-    @property
+    @cached_property
     def students(self):
         return self.mapping.keys()
 
     # -------------------------------------------------------------------------
 
-    async def upload_report(self, session, student_id):
+    async def upload_report(self, session, student):
         '''
         Upload a file to the comments section of a given assignment for the 
-        given student_id
+        given student
         '''
-        if student_id not in self.mapping:
-            print(student_id, "not found in course list")
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
             return False
 
-        canvas_id = self.mapping[student_id]
+        canvas_id = self.mapping[student]
         url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}/comments/files"
 
-        report_path = f'{student_id}/{self.cfg["report"]}'
+        report_path = f'{student}/{self.cfg["report"]}'
 
-        if not os.path.exists(report_path):
-            print(student_id, "report file not found")
+        if not os.path.isfile(report_path):
+            console.error(report_path, "doesn't exist.")
             return False
 
         file_size = os.path.getsize(report_path)
         data = {
-            "name": report_path,
+            "name": self.cfg["report"],
             "size": file_size,
             "content_type": "text/html",
-            "parent_folder_path": "My Files/reports"
         }
 
         async with session.post(url, data=data, headers=self.header) as resp:
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            print(student_id, "error adding submission comment file data")
+            console.error(student, "error adding submission comment file data")
             return False
 
         url = res.get('upload_url')
         data = {"file": open(report_path, 'rb')}
 
         async with session.post(url, data=data, headers=self.header) as resp:
-            res = await resp.json()
+            try:
+                res = await resp.json()
+            except Exception as e:
+                console.error(student, "error uploading file")
+                # console.log(url, str(data), self.header)
+                return False
 
         if res.get('error') or res.get('errors'):
-            print(student_id, "error uploading report file")
+            console.error(student, "error uploading report file")
             return False
 
         url = res.get('location')
@@ -174,7 +178,7 @@ class Canvas():
             res = await resp.json()
 
         if (res.get('upload_status') != "success"):
-            print(student_id, "error uploading report file")
+            console.error(student, "error uploading report file")
             return False
 
         file_id = res.get('id')
@@ -184,19 +188,19 @@ class Canvas():
             res = await resp.json()
         
         if res.get('error') or res.get('errors'):
-            print(student_id, "error attaching file to comment")
+            console.error(student, "error attaching file to comment")
             return False
 
         return True
 
     # -------------------------------------------------------------------------
 
-    async def download_submission(self, session, student_id):
-        if student_id not in self.mapping:
-            print(student_id, "not found in course list")
+    async def download_submission(self, session, student, late=False):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
             return False
 
-        canvas_id = self.mapping[student_id]
+        canvas_id = self.mapping[student]
 
         url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
         data = {"include[]": "submission_history"}
@@ -205,21 +209,21 @@ class Canvas():
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            print(student_id, "error getting submission details")
+            console.error(student, "error getting submission details")
             return False
 
         file_url = self._get_file_url(res)
 
         # Found no submissions.
         if file_url is None:
-            print(student_id, "submmission late / not found")
+            console.error(student, "submmission late / not found")
             return False
 
 
         async with session.get(file_url, data={}, headers=self.header) as resp:
             content = await resp.content.read()
-            file_path = f'{student_id}/{self.cfg["file_name"]}'
-            os.makedirs(student_id, exist_ok=True)
+            file_path = f'{student}/{self.cfg["file_name"]}'
+            os.makedirs(student, exist_ok=True)
             f = await aiofiles.open(file_path, mode='wb')
             await f.write(content)
             await f.close()
@@ -228,12 +232,12 @@ class Canvas():
 
     # -------------------------------------------------------------------------
 
-    async def upload_mark(self, session, student_id, mark_list):
-        if student_id not in self.mapping:
-            print(student_id, "not found in course list")
+    async def upload_mark(self, session, student, mark_list):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
             return False
 
-        canvas_id = self.mapping[student_id]
+        canvas_id = self.mapping[student]
         url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}"
 
         # For Canvas, we can only submit one numerical mark. Take the sum:
@@ -244,19 +248,19 @@ class Canvas():
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            print(student_id, "error uploading marks")
+            console.error(student, "error uploading marks")
             return False
 
         return True
 
 # -----------------------------------------------------------------------------
 
-    async def delete_report(self, session, student_id):
-        if student_id not in self.mapping:
-            print(student_id, "not found in course list")
+    async def delete_report(self, session, student):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
             return False
 
-        canvas_id = self.mapping[student_id]
+        canvas_id = self.mapping[student]
         url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
         data = {"include[]": "submission_comments"}
 
@@ -264,7 +268,7 @@ class Canvas():
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            print(student_id, "error getting submission details")
+            console.error(student, "error getting submission details")
             return False
 
         for sub_comment in res['submission_comments']:
@@ -278,7 +282,7 @@ class Canvas():
                 res = await resp.json()
 
             if res.get("error") or res.get("errors"):
-                print(student_id, "error deleting comment id", comment_id)
+                console.error(student, "error deleting comment id", comment_id)
 
         return True
 

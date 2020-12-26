@@ -1,7 +1,8 @@
 import yaml
 import os
 import sys 
-    
+from .log import console
+
 def set_if_not(config, field, default):
     if field not in config or config[field] is None:
         config[field] = default
@@ -9,7 +10,6 @@ def set_if_not(config, field, default):
 
 def set_default_values(config):
     set_if_not(config, 'default_criteria', 'tests')    # For Markus
-    set_if_not(config, 'allow_late', False)            # For Canvas
     
     set_if_not(config, 'imports', [])
     
@@ -42,10 +42,15 @@ def set_default_values(config):
 
 def load(cfg_path):
     if not os.path.exists(cfg_path):
-        print(f"Error: {cfg_path} does not exist.")
+        console.error(f"Error: {cfg_path} does not exist.")
         sys.exit(1)
         
     with open(cfg_path) as cfg_file:
-        config = yaml.safe_load(cfg_file)
+        try:
+            config = yaml.safe_load(cfg_file)
+        except Exception as e:
+            console.error(f"Error: {cfg_path} is not a valid config file.")
+            sys.exit(1)
+        
     set_default_values(config)    
     return config

@@ -8,4 +8,6 @@ build/*
 dist/*
 *.egg-info
 tests/
+testing/
+markustesting/
 config.yml

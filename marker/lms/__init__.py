@@ -1,5 +1,6 @@
 from .canvas import Canvas
 from .markus import Markus
+from ..utils.log import console
 
 def LMS_Factory(config):
     assert('lms' in config), "Must have an LMS in the config"
@@ -16,5 +17,5 @@ def LMS_Factory(config):
         return Canvas(config)
     
     elif config['lms'].lower() == 'markus':
-        print("For now, async support with markus doesn't exist. Please use an earlier version of marker")
+        # raise Exception("MarkUs Not supported yet")
         return Markus(config)

@@ -7,6 +7,8 @@ import asyncio
 from ..utils import pushd
 from ..utils import config
 from ..lms import LMS_Factory
+from ..utils.log import progress_futures
+
 
 async def delete_report_dispatch(lms, student=None):
     '''
@@ -14,11 +16,11 @@ async def delete_report_dispatch(lms, student=None):
     the working directory is the root of the assignment directory
     '''
     students = lms.students if student is None else [ student ]
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(limit=10)
+    async with aiohttp.ClientSession(connector=connector) as session: 
         tasks = [lms.delete_report(session, student) for student in students]
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await progress_futures(tasks, "Deleting reports")
 
 
 def delete_report_handler(cfg, lms, student):
     asyncio.run(delete_report_dispatch(lms, student))
-    print("Done.")

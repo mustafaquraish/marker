@@ -8,87 +8,157 @@ import random
 import sys
 import cmd2
 import os
+import textwrap
+# from build.lib.marker import Marker
 from marker import Marker
-
+from marker.utils.log import console
 from cmd2 import ansi
-
-all_students_list = []
-
+from cmd2.utils import basic_complete
 
 class MarkerCLI(cmd2.Cmd):
-    """ Marker CLI """
 
     def __init__(self, args):
-        # Set use_ipython to True to enable the "ipy" command which embeds and interactive IPython shell
         super().__init__(use_ipython=False)
+        self.args = args
+        self.marker = Marker(self.args)
+        self.prompt = ansi.style('marker > ', fg="blue")
+        self.default_to_shell = True
+        self.students_list = []
+        self.update_students_list()
 
-        self.marker = Marker(args)
-        self.prompt = ansi.style('marker > ', fg="white", bg="black")
+    # --------------- Update student list for autocompletion ------------------
 
-
-    def _complete_list_value(self, text, line, begidx, endidx):
-        type_ = line.split()[1]
-        if type_ == 'student':
-            return [e for e in all_students_list if e.startswith(text)]
+    def update_students_list(self, students=None):
+        if students is not None:
+            self.students_list = students
         else:
-            return []
-        
-    student_parser = argparse.ArgumentParser()
-    student_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", choices=all_students_list)
+            candidates_dir = f'{self.args["assgn_dir"]}/candidates/'
+            if os.path.isdir(candidates_dir):
+                students_list = sorted(os.listdir(candidates_dir))
+                self.students_list = students_list
 
-    @cmd2.with_argparser(student_parser)
+    # --------------- Reload config file --------------------------------------
+
+    def do_reload(self, args):
+        """ Reload the configuration file """
+        self.marker = Marker(self.args)
+
+    # --------------- Completion helper ---------------------------------------
+
+    def student_completer(self, text, line, begidx, endidx):
+        return basic_complete(text, line, begidx, endidx, self.students_list)
+
+
+    student_parser = argparse.ArgumentParser()
+    student_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", completer_method=student_completer)
+
+
+    # ---------------- Download submissions -----------------------------------
+
+    download_parser = argparse.ArgumentParser()
+    download_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", completer_method=student_completer)
+    download_parser.add_argument("--allow_late", "-l", action='store_true', default=False, help="Allow late submissions (Canvas)")
+
+    @cmd2.with_argparser(download_parser)
     def do_download(self, args):
         """ Download submissions for student(s) """
-        self.marker.download_submissions(args.student)
+        self.marker.download_submissions(args.student, late=args.allow_late)
+        self.update_students_list(self.marker.lms.students)
+
+
+    # ----------------- Prepare submissions -----------------------------------
 
     @cmd2.with_argparser(student_parser)
     def do_prepare(self, args):
-        """ Download submissions for student(s) """
+        """ Prepare submissions for student(s) """
         self.marker.prepare(args.student)
+
+    # ---------------------- Upload marks -------------------------------------
+
 
     @cmd2.with_argparser(student_parser)
     def do_upload_marks(self, args):
-        """ Download submissions for student(s) """
+        """ Upload marks for student(s) """
         self.marker.upload_marks(args.student)
+    
+    # ---------------------- Upload reports -----------------------------------
 
     @cmd2.with_argparser(student_parser)
     def do_upload_reports(self, args):
-        """ Download submissions for student(s) """
+        """ Upload reports for student(s) """
         self.marker.upload_reports(args.student)
+
+    # ---------------------- Delete reports -----------------------------------
 
     @cmd2.with_argparser(student_parser)
     def do_delete_reports(self, args):
-        """ Download submissions for student(s) """
+        """ Delete reports from LMS for student(s) """
         self.marker.delete_reports(args.student)
 
 
+    # ---------------------- Run automarker -----------------------------------
+
     run_parser = argparse.ArgumentParser()
-    run_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", choices=all_students_list)
+    run_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", completer_method=student_completer)
     run_parser.add_argument("--recompile", "-r", action='store_true', help="Force recompile submissions")
     run_parser.add_argument("--all", "-a", action='store_true', default=False, help="Force re-mark all submissions")
     @cmd2.with_argparser(run_parser)
     def do_run(self, args):
-        """ Download submissions for student(s) """
+        """ Run test cases student(s) """
         self.marker.run(args.student, args.recompile, args.all)
+
+    # ---------------------- Set status (Markus) -----------------------------------
+
+    status_parser = argparse.ArgumentParser()
+    status_parser.add_argument("status", help="Status", choices=["complete", "incomplete"])
+    status_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", completer_method=student_completer)
+
+    @cmd2.with_argparser(status_parser)
+    def do_set_status(self, args):
+        """ Set the status on MarkUs for students """
+        self.marker.set_status(args.status, args.student)
+
+    # -------------------------- Aliases --------------------------------------
+
+    do_q = cmd2.Cmd.do_quit
 
 
 def main():
-    top_parser = argparse.ArgumentParser()
-    top_parser.add_argument("assgn_dir", nargs='?', default=os.getcwd(), help="Marking directory (Default: current)")
-    top_parser.add_argument("--config", default=None, help="Location of configuration file, if not config.yml in assgn_dir")
-    top_parser.add_argument("--src_dir", default=None, help="Location of source files, if not config.yml parent dir")
+    top_parser = argparse.ArgumentParser(      
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=textwrap.dedent('''\
+         additional information:
+             This program is an interactive REPL, which can also be used as a
+             regular CLI. For instance, running:
+
+                $ marker download student1
+
+             is equivalent to first running `marker`, then running the 
+             command `download student1` on the REPL, followed by `quit`.
+         ''')   
+    )
+    top_parser.add_argument("-d", "--assgn_dir", default=os.getcwd(), help="Marking directory (Default: current)")
+    top_parser.add_argument("-c","--config", default=None, help="Location of config file (Default: assgn_dir/config.yml)")
+    top_parser.add_argument("-s","--src_dir", default=None, help="Location of source files (Default: config directory)")
     
-    args = vars(top_parser.parse_args())
+    args, unknown = top_parser.parse_known_args()
+    args = vars(args)
 
     if args["config"] is None:
         args["config"] = f'{args["assgn_dir"]}/config.yml'
     if args["src_dir"] is None:
         args["src_dir"] = os.path.dirname(args["config"])
 
-    candidates_dir = f'{args["assgn_dir"]}/candidates/'
-    if os.path.isdir(candidates_dir):
-        for student in os.listdir(candidates_dir):
-            all_students_list.append(student)
+
+    # Remove command line args to not trip up cmd2
+    sys.argv = sys.argv[:1]     # Keep argv[0] intact
+    
+    # Handle remaining command line args to make this behave like a regular CLI
+    if unknown != []:
+        command = " ".join(unknown)
+        console.log(f"Running command: [red]{command}")
+        sys.argv.append(command)    
+        sys.argv.append("quit")    
 
     app = MarkerCLI(args)
     sys.exit(app.cmdloop())

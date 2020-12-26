@@ -26,7 +26,7 @@ setuptools.setup(
         'marker'
     ],
     install_requires=[
-        'requests', 'pyyaml', 'aiohttp', 'aiofiles', 'cmd2', 'tqdm'
+        'requests', 'pyyaml', 'aiohttp', 'aiofiles', 'cmd2', 'rich'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

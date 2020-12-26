@@ -8,6 +8,7 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
+from ..utils.log import progress_iter, console
 
 def mark_submission(student, cfg):
     '''
@@ -77,7 +78,6 @@ def mark_submission(student, cfg):
             report_file.write("-"*79 + '\n\n')
             report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
 
-    print(f"- Marking {student} ... {total_mark} marks.", flush=True)
     return mark_list
 
 # -----------------------------------------------------------------------------
@@ -107,7 +107,7 @@ def run_handler(cfg, student):
             if "n" not in create:
                 marksheet.add_students(all_students)
             else:
-                print("Marksheet not found or created. Stopping.")
+                console.error("Marksheet not found or created. Stopping.")
                 return
         
         # Marksheet exists! Just load it in
@@ -119,19 +119,23 @@ def run_handler(cfg, student):
         # Just reset the marksheet
         if student is not None:
             if student not in all_students:
-                print(student, "submission directory doesn't exist. Stopping.")
+                console.error(student, "submission directory doesn't exist. Stopping.")
                 return
             students_to_mark = [ student ]
         else:
-            students_to_mark = marksheet.unmarked()
+            students_to_mark = list(marksheet.unmarked())
+
+        if len(students_to_mark) == 0:
+            console.error("Everyone is already marked. Run with -a to re-run, or with"
+                          " an individual student name")
+            return
 
         # Run the marker!
-        for student in students_to_mark:
+        for student in progress_iter(students_to_mark, "Marking"):
             try:
                 marks_list = mark_submission(student, cfg)
                 marksheet[student] = marks_list
                 marksheet.save(marksheet_path)
             except Exception as e:
-                print(f'Error when marking {student}: {e}')
+                console.error(f'Error when marking {student}: {e}')
 
-    print("Done.")
