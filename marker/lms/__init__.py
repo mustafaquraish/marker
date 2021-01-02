@@ -1,6 +1,6 @@
 from .canvas import Canvas
 from .markus import Markus
-from ..utils.log import console
+from ..utils.console import console
 
 def LMS_Factory(config):
     assert('lms' in config), "Must have an LMS in the config"

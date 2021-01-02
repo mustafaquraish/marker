@@ -7,7 +7,7 @@ import asyncio
 from ..utils.marksheet import Marksheet
 from ..utils import config
 from ..lms import LMS_Factory
-from ..utils.log import progress_futures, console
+from ..utils.console import console
 
 
 async def set_status_dispatch(lms, status, student=None):
@@ -19,7 +19,7 @@ async def set_status_dispatch(lms, status, student=None):
     connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session:  
         tasks = [lms.set_status(session, student, status) for student in students]
-        await progress_futures(tasks, "Setting status")
+        await console.track_async(tasks, "Setting status")
 
 
 def set_status_handler(lms, status, student):    

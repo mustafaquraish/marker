@@ -6,7 +6,7 @@ Utilities related to interfacing with Canvas
 import requests
 import aiofiles
 from functools import cached_property
-from ..utils.log import console
+from ..utils.console import console
 import os
 
 class Canvas():

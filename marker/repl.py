@@ -10,7 +10,7 @@ import cmd2
 import os
 import textwrap
 from marker import Marker
-from marker.utils.log import console
+from marker.utils.console import console
 from cmd2 import ansi
 from cmd2.utils import basic_complete
 
@@ -79,7 +79,7 @@ class MarkerCLI(cmd2.Cmd):
     def do_upload_marks(self, args):
         """ Upload marks for student(s) """
         self.marker.upload_marks(args.student)
-    
+
     # ---------------------- Upload reports -----------------------------------
 
     @cmd2.with_argparser(student_parser)
@@ -101,10 +101,11 @@ class MarkerCLI(cmd2.Cmd):
     run_parser.add_argument("student", nargs='?', default=None, help="(Optional) individual student", completer_method=student_completer)
     run_parser.add_argument("--recompile", "-r", action='store_true', help="Force recompile submissions")
     run_parser.add_argument("--all", "-a", action='store_true', default=False, help="Force re-mark all submissions")
+    run_parser.add_argument("--verbose", "-v", action='store_true', default=False, help="Show marks as submissions are finished")
     @cmd2.with_argparser(run_parser)
     def do_run(self, args):
         """ Run test cases student(s) """
-        self.marker.run(args.student, args.recompile, args.all)
+        self.marker.run(args.student, args.recompile, args.all, args.verbose)
 
     # ---------------------- Set status (Markus) -----------------------------------
 
@@ -123,7 +124,7 @@ class MarkerCLI(cmd2.Cmd):
 
 
 def main():
-    top_parser = argparse.ArgumentParser(      
+    top_parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=textwrap.dedent('''\
          additional information:
@@ -132,14 +133,14 @@ def main():
 
                 $ marker download student1
 
-             is equivalent to first running `marker`, then running the 
+             is equivalent to first running `marker`, then running the
              command `download student1` on the REPL, followed by `quit`.
-         ''')   
+         ''')
     )
     top_parser.add_argument("-d", "--assgn_dir", default=os.getcwd(), help="Marking directory (Default: current)")
     top_parser.add_argument("-c","--config", default=None, help="Location of config file (Default: assgn_dir/config.yml)")
     top_parser.add_argument("-s","--src_dir", default=None, help="Location of source files (Default: config directory)")
-    
+
     args, unknown = top_parser.parse_known_args()
     args = vars(args)
 
@@ -151,15 +152,15 @@ def main():
 
     # Remove command line args to not trip up cmd2
     sys.argv = sys.argv[:1]     # Keep argv[0] intact
-    
+
     # Handle remaining command line args to make this behave like a regular CLI
     if unknown != []:
-        command = " ".join(unknown)
         # Dashed and underscores are both fine for CLI
-        command = command.replace("-", "_")
+        unknown[0] = unknown[0].replace("-", "_")
+        command = " ".join(unknown)
         console.log(f"Running command: [red]{command}")
-        sys.argv.append(command)    
-        sys.argv.append("quit")    
+        sys.argv.append(command)
+        sys.argv.append("quit")
 
     app = MarkerCLI(args)
     sys.exit(app.cmdloop())

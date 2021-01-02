@@ -6,7 +6,7 @@ import sys
 from ..utils import pushd
 from ..utils import run_command
 from ..utils.marksheet import Marksheet
-from ..utils.log import progress_iter
+from ..utils.console import console
 
 # -----------------------------------------------------------------------------
 
@@ -20,7 +20,7 @@ def prepare_handler(cfg, student):
         students = [ student ]
 
     # Copy over all the files into each student's directory.
-    for student in progress_iter(students, "Copying files"):
+    for student in console.track(students, "Copying files"):
         student_path = f'{cfg["assgn_dir"]}/candidates/{student}/'
         if os.path.exists(student_path):
             for item in cfg['imports']:
@@ -32,7 +32,7 @@ def prepare_handler(cfg, student):
         return
 
     # Compile each of the student's files if needed.
-    for student in progress_iter(students, "Compiling code"):
+    for student in console.track(students, "Compiling code"):
         # If compilation command set, go into testing directory, and run it. 
         # Output the logs to the given file.
         testing_path = f'{cfg["assgn_dir"]}/candidates/{student}/{cfg["testing_dir"]}'

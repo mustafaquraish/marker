@@ -1,5 +1,5 @@
 '''
-Utilities related to interfacing with Canvas
+Utilities related to interfacing with MarkUs
 
 (C) Mustafa Quraish, 2020
 '''
@@ -7,7 +7,7 @@ import requests
 import os
 import aiofiles
 
-from ..utils.log import console
+from ..utils.console import console
 from functools import cached_property
 
 class Markus():
@@ -114,6 +114,7 @@ class Markus():
     @ cached_property
     def students(self):
         return self.mapping.keys()
+
     # -------------------------------------------------------------------------
 
     def student_exists(self, student):
@@ -135,7 +136,7 @@ class Markus():
         for _, rid in feedback_files.items():
             url = f'{self.base_url}/api/assignments/{self.assgn_id}/groups/{group_id}/feedback_files/{rid}.json'
             async with session.delete(url, headers=self.header) as resp:
-                res = await res.json()
+                res = await resp.json()
             
             if int(res['code']) != 200:
                 console.error(student, "error:", res['description'])
@@ -162,7 +163,7 @@ class Markus():
         if existing_ffs is None:
             console.error(student, "error getting feedback files.")
             return False
-
+        
         # Report already exists, use PUT to replace
         if fname in existing_ffs:
             url = f'{self.base_url}/api/assignments/{self.assgn_id}/groups/{group_id}/feedback_files/{existing_ffs[fname]}.json'
@@ -241,7 +242,7 @@ class Markus():
             res = await resp.json()
 
         if int(res['code']) != 200:
-            console.error(student, "error uploading mark")
+            console.error(student, "error uploading mark:", res['description'])
             return False
 
         return True
@@ -261,7 +262,7 @@ class Markus():
             res = await resp.json()
 
         if int(res['code']) != 200:
-            console.error(student, "error setting status mark")
+            console.error(student, "error setting status:", res['description'])
             return False
 
         return True

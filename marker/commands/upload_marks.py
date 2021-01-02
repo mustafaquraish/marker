@@ -7,7 +7,7 @@ import asyncio
 from ..utils.marksheet import Marksheet
 from ..utils import config
 from ..lms import LMS_Factory
-from ..utils.log import progress_futures, console
+from ..utils.console import console
 
 
 async def upload_mark_dispatch(lms, marksheet, student=None):
@@ -19,7 +19,7 @@ async def upload_mark_dispatch(lms, marksheet, student=None):
     connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session:  
         tasks = [lms.upload_mark(session, student, marksheet[student]) for student in students]
-        await progress_futures(tasks, "Uploading marks")
+        await console.track_async(tasks, "Uploading marks")
 
 
 def upload_mark_handler(cfg, lms, student):

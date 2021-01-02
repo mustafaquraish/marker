@@ -7,7 +7,7 @@ import asyncio
 from ..utils import pushd
 from ..utils import config
 from ..lms import LMS_Factory
-from ..utils.log import progress_futures, console
+from ..utils.console import console
 
 async def upload_report_dispatch(lms, student=None):
     '''
@@ -19,7 +19,7 @@ async def upload_report_dispatch(lms, student=None):
     console.log("Sending requests, this may take a while")
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [lms.upload_report(session, student) for student in students]
-        await progress_futures(tasks, "Uploading reports")
+        await console.track_async(tasks, "Uploading reports")
 
 
 def upload_report_handler(cfg, lms, student):

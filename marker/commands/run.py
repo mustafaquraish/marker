@@ -8,7 +8,7 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
-from ..utils.log import progress_iter, console
+from ..utils.console import console
 
 def mark_submission(student, cfg):
     '''
@@ -131,11 +131,13 @@ def run_handler(cfg, student):
             return
 
         # Run the marker!
-        for student in progress_iter(students_to_mark, "Marking"):
+        for student in console.track(students_to_mark, "Marking"):
             try:
                 marks_list = mark_submission(student, cfg)
                 marksheet[student] = marks_list
                 marksheet.save(marksheet_path)
+                if cfg["show_marks"]:
+                    console.log(student, "total marks", sum(marks_list))
             except Exception as e:
                 console.error(f'Error when marking {student}: {e}')
 

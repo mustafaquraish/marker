@@ -9,7 +9,7 @@ from ..utils import config
 from ..utils import pushd
 from ..utils.marksheet import Marksheet
 from ..lms import LMS_Factory
-from ..utils.log import progress_futures, console
+from ..utils.console import console
 
 
 # Handler to download submission for each process
@@ -21,7 +21,7 @@ async def download_dispatch(lms, student=None):
     connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session: 
         tasks = [lms.download_submission(session, student) for student in students]
-        await progress_futures(tasks, "Downloading submissions")
+        await console.track_async(tasks, "Downloading submissions")
 
 # -----------------------------------------------------------------------------
 

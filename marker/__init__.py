@@ -1,7 +1,7 @@
 from .utils import config
 from .utils.marksheet import Marksheet
 from .utils import pushd
-from .utils.log import console
+from .utils.console import console
 
 from .lms import LMS_Factory
 
@@ -34,7 +34,7 @@ class Marker():
     def prepare(self, student=None):
         return prepare_handler(self.cfg, student)
 
-    def run(self, student=None, recompile=False, all=False):
+    def run(self, student=None, recompile=False, all=False, verbose=False):
         """
         Run takes in some additional arguments to augment behaviour such as
         forcing recompilation and running for all students.
@@ -42,6 +42,7 @@ class Marker():
         new_cfg = self.cfg.copy()
         new_cfg['all'] = all
         new_cfg['recompile'] = recompile
+        new_cfg['show_marks'] = verbose
         return run_handler(new_cfg, student)
     
     def upload_reports(self, student=None):

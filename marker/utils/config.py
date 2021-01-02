@@ -1,7 +1,7 @@
 import yaml
 import os
 import sys 
-from .log import console
+from .console import console
 
 def set_if_not(config, field, default):
     if field not in config or config[field] is None:

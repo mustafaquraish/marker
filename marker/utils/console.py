@@ -18,45 +18,49 @@ class MyConsole(Console):
         y_or_n = "[Y]/n: " if default else "y/[N]: "
         answer = self.input(f'{prompt} {y_or_n}', **kwargs)
         return ("n" if default else "y") in answer.lower()
+    
+    def track(self, tasks, label="Processing"):
+        progress = Progress(
+            "[progress.description][yellow]{task.description} {task.fields[key]}",
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeRemainingColumn(),
+            console=self
+        )
+        with progress:
+            task_bar = progress.add_task(label, total=len(tasks), key=tasks[0])
+            for task in tasks:
+                yield task
+                progress.update(task_bar, advance=1, key=task)
+
+    async def track_async(self, tasks, label="Processing"):
+        with Progress(console=self) as progress:
+            task_bar = progress.add_task("[yellow]"+label, total=len(tasks))
+            results = []
+            for task in asyncio.as_completed(tasks):
+                try:
+                    result = await task
+                    results.append(result)
+                except Exception as e:
+                    console.error("Exception occured:", e)
+                progress.update(task_bar, advance=1)
+            return results
         
 console = MyConsole()
 
-async def progress_futures(tasks, label="Processing"):
-    with Progress(console=console) as progress:
-        task_bar = progress.add_task("[yellow]"+label, total=len(tasks))
-        results = []
-        for task in asyncio.as_completed(tasks):
-            try:
-                result = await task
-                results.append(result)
-            except Exception as e:
-                console.error("Exception occured:", e)
-            progress.update(task_bar, advance=1)
-        return results
 
-def progress_iter(tasks, label="Processing"):
-    progress = Progress(
-        "[progress.description][yellow]{task.description} {task.fields[key]}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.0f}%",
-        TimeRemainingColumn(),
-        console=console
-    )
-    with progress:
-        task_bar = progress.add_task(label, total=len(tasks), key=tasks[0])
-        for task in tasks:
-            yield task
-            progress.update(task_bar, advance=1, key=task)
+
+
 
 
 
 if __name__ == "__main__":
-    # lst = list(range(100))
-    # for i in progress_iter(lst, "Counting"):
-    #     if (i % 10) == 0:
-    #         print(i)
-    #     sleep(0.02)
-    # pass
+    lst = list(range(100))
+    for i in progress_iter(lst, "Counting"):
+        if (i % 10) == 0:
+            print(i)
+        sleep(0.02)
+    pass
 
     import aiohttp
 
