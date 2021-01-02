@@ -12,6 +12,10 @@ from ..utils.console import console
 
 def prepare_handler(cfg, student):
 
+    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
+        console.error("Candidates directory does exist. Quitting.")
+        return
+
     students = sorted(os.listdir(f'{cfg["assgn_dir"]}/candidates'))
     if student is not None:
         if student not in students:

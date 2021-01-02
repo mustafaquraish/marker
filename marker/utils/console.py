@@ -14,10 +14,16 @@ class MyConsole(Console):
     def log(self, *args, **kwargs):
         self.print('[+]', *args, style="green", **kwargs)
     
+    def get(self, prompt, **kwargs):
+        return self.input(f'[yellow][?] {prompt}: ', **kwargs)
+
     def ask(self, prompt, default=False, **kwargs):
-        y_or_n = "[Y]/n: " if default else "y/[N]: "
-        answer = self.input(f'{prompt} {y_or_n}', **kwargs)
-        return ("n" if default else "y") in answer.lower()
+        y_or_n = "[Y]/n" if default else "y/[N]"
+        answer = self.get(f'{prompt} {y_or_n}', **kwargs)
+        if default == True:
+            return "n" not in answer.lower()
+        else:
+            return "y" in answer.lower()
     
     def track(self, tasks, label="Processing"):
         progress = Progress(

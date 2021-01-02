@@ -39,8 +39,8 @@ class Canvas():
             if self.base_url in tokens_dict:
                 return tokens_dict[self.base_url]
 
-        token = console.input("[yellow]- Enter Canvas Token: ").strip()
-        save = console.ask(f"[yellow]- Save token in [red]{token_path}[/red]?", default=true)
+        token = console.get("Enter Canvas Token").strip()
+        save = console.ask(f"Save token in [red]{token_path}[/red]?", default=true)
         if save:
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')

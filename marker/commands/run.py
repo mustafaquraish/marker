@@ -84,6 +84,10 @@ def mark_submission(student, cfg):
 
 def run_handler(cfg, student):
 
+    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
+        console.error("Candidates directory does exist. Quitting.")
+        return
+
     # Enter assignment directory
     with pushd(cfg['assgn_dir']):
 
