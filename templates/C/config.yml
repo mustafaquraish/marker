@@ -1,0 +1,32 @@
+lms: canvas
+base_url: dummy_url
+course: 00000
+assignment: 11111
+
+imports:
+  - marker.h
+  - tests.c
+
+compile: gcc tests.c -o tests
+compile_check: ls ./tests
+
+tests:
+  - description: "Testing square()"
+    command: ./tests test_square
+    mark: 1
+    timeout: 1
+
+  - description: "Testing sum_of_squares()"
+    command: ./tests test_sum_of_squares
+    mark: 2
+    timeout: 2
+
+  - description: "Testing sleep_10_sec()"
+    command: ./tests test_sleep_10_sec
+    mark: 2
+    timeout: 1
+
+  - description: "Testing exit_with_7()"
+    command: ./tests test_exit_with_7
+    exit_code: 7
+    mark: 1
