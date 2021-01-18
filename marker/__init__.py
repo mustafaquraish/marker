@@ -46,10 +46,6 @@ class Marker():
         return run_handler(new_cfg, student)
     
     def upload_reports(self, student=None):
-        if self.cfg["lms"] == "markus":
-            if not console.ask("Uploading reports on MarkUs is untested. Continue?"):
-                console.error("Stopped.")
-                return None
         return upload_report_handler(self.cfg, self.lms, student)
 
     def upload_marks(self, student=None):
