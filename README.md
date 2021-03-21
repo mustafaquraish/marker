@@ -15,6 +15,7 @@ This package installs the program `marker`. It can either be run as an interacti
 - `upload-reports`: Uploads the testing logs to the LMS for the student.
 - `delete-reports`: Deletes the testing logs from the LMS for the student.
 - `set-status`: Sets the marking state of the submission (MarkUs only).
+- `stats`: Gives you some basic statistics of the results.
 
 Each of the commands can be run either for individual students or for everyone. Run `marker help` or `marker help command` for more information.
 
@@ -53,5 +54,15 @@ pip3 install dist/*
 
 ---
 
-[(NOT UPDATED) Full Documentation available in the wiki](https://github.com/mustafaquraish/marker/wiki)
+## How to use
+
+Some examples on how to use this marker with Python and C code are provided
+in the `templates` directory, however it is designed to work with any programming
+language as long as you can run tests from the command line. Even if you're not
+using C, the template will be helpful in showing you how to set it up to work
+with your environment.
+
+---
+
+[(Full Documentation](https://marker-docs.readthedocs.io/en/latest/)
 
