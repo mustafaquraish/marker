@@ -1,7 +1,8 @@
 import yaml
 import os
 import sys 
-    
+from .console import console
+
 def set_if_not(config, field, default):
     if field not in config or config[field] is None:
         config[field] = default
@@ -9,14 +10,12 @@ def set_if_not(config, field, default):
 
 def set_default_values(config):
     set_if_not(config, 'default_criteria', 'tests')    # For Markus
-    set_if_not(config, 'allow_late', False)            # For Canvas
     
     set_if_not(config, 'imports', [])
     
     set_if_not(config, 'marksheet', 'marksheet.yml')
     set_if_not(config, 'report', 'report.txt')
     set_if_not(config, 'report_header', None)
-    set_if_not(config, 'testing_dir', ".")
 
     set_if_not(config, 'compile', None)
     set_if_not(config, 'compile_log', 'compile.log')
@@ -37,15 +36,28 @@ def set_default_values(config):
         # For Markus
         set_if_not(test, 'criteria', config['default_criteria'])
 
-    pass
-
-
 def load(cfg_path):
     if not os.path.exists(cfg_path):
-        print(f"Error: {cfg_path} does not exist.")
-        sys.exit(1)
+        console.error(f"Error: {cfg_path} does not exist.")
+        return prompt_use_empty_config()
         
     with open(cfg_path) as cfg_file:
-        config = yaml.safe_load(cfg_file)
+        try:
+            config = yaml.safe_load(cfg_file)
+            if config is None:
+                config = {}
+        except Exception as e:
+            console.error(f"Error: {cfg_path} is not a valid config file.")
+            return prompt_use_empty_config()
+
     set_default_values(config)    
     return config
+
+def prompt_use_empty_config():
+    if console.ask("Use default (empty) config?", default=True):
+        config = {}
+        set_default_values(config)    
+        return config
+    else:
+        console.error("Exiting.")
+        sys.exit(1)

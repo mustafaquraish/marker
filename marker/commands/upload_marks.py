@@ -1,38 +1,33 @@
 #! /usr/bin/env python3
 
 import os
-import concurrent.futures
+import aiohttp
+import asyncio
 
+from ..utils.marksheet import Marksheet
 from ..utils import config
 from ..lms import LMS_Factory
-from ..utils.marksheet import Marksheet
+from ..utils.console import console
 
 
-def upload_handler(student, marks_list, lms):
+async def upload_mark_dispatch(lms, marksheet, student=None):
     '''
-    Given a student's identifier, and mark, upload to LMS.
+    Given a student's identifier, upload their report file to LMS. Assumes
+    the working directory is the root of the assignment directory
     '''
-    done = lms.upload_mark(student, marks_list)
-    base = f"- Uploading {student} mark ... "
-    print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
+    students = lms.students if student is None else [ student ]
+    connector = aiohttp.TCPConnector(limit=10)
+    async with aiohttp.ClientSession(connector=connector) as session:  
+        tasks = [lms.upload_mark(session, student, marksheet[student]) for student in students]
+        await console.track_async(tasks, "Uploading marks")
 
 
-def main(args):
+def upload_mark_handler(cfg, lms, student):
+    marksheet_path = f'{cfg["assgn_dir"]}/{cfg["marksheet"]}'
+    if not os.path.exists(marksheet_path):
+        console.error(marksheet_path, "file not found. Stopping.")
+        return
 
-    # Load the configuration and get an instance of the LMS class
-    cfg = config.load(args.config)
-    lms = LMS_Factory(cfg)
-
-    # Load Marksheet
-    marksheet = Marksheet()
-    marksheet.load(f'{args.assgn_dir}/{cfg["marksheet"]}')
-
-    # The following will trigger fetching the students before we multithread
-    _ = lms.students()
-
-    # Upload the marks submissions in parallel
-    with concurrent.futures.ProcessPoolExecutor(20) as executor:
-        for student, mark_list in marksheet.marked_items():
-            executor.submit(upload_handler, student, mark_list, lms)
-    
-    print("Done.")
+    console.log("Loading marksheet")
+    marksheet = Marksheet(marksheet_path)
+    asyncio.run(upload_mark_dispatch(lms, marksheet, student))

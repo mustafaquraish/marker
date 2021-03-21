@@ -1,53 +1,26 @@
 #! /usr/bin/env python3
 
 import os
-import sys
-import concurrent.futures
+import aiohttp
+import asyncio
 
-from ..utils import config
-from ..utils import pushd
-from ..utils import run_command
 from ..utils.marksheet import Marksheet
+from ..utils import config
+from ..lms import LMS_Factory
+from ..utils.console import console
 
-from ..lms import Markus
 
-# Handler to upload mark for each thread
-def status_handler(student, status, lms):
+async def set_status_dispatch(lms, status, student=None):
     '''
-    Given a student's identifier, and mark, upload to LMS.
+    Given a student's identifier, set their MarkUs submission status to
+    complete / incomplete
     '''
-    done = lms.set_status(student, status)
-    base = f"- Setting {student} to {status} ... "
-    print(base + ("Done." if done else "[ERROR] Failed."), flush=True)
+    students = lms.students if student is None else [ student ]
+    connector = aiohttp.TCPConnector(limit=10)
+    async with aiohttp.ClientSession(connector=connector) as session:  
+        tasks = [lms.set_status(session, student, status) for student in students]
+        await console.track_async(tasks, "Setting status")
 
-# -----------------------------------------------------------------------------
 
-def main(args):
-
-    if args.config is None:
-        args.config = f'{args.assgn_dir}/config.yml'
-
-    # -------------------------------------------------------------------------
-
-    # Load the configuration and get an instance of the LMS class
-    cfg = config.load(args.config)
-
-    # Load LMS
-    if cfg['lms'].lower() != "markus":
-        print(f"- Nothing to do on {cfg['lms']}; this is only for MarkUs.")
-        sys.exit(0)
-    lms = Markus(cfg)
-
-    # Load marksheet
-    marksheet = Marksheet()
-    marksheet.load(f'{args.assgn_dir}/{cfg["marksheet"]}')
-
-    # -------------------------------------------------------------------------
-    
-    # The following will trigger fetching the students before we multithread
-    _ = lms.students()
-
-    executor = concurrent.futures.ProcessPoolExecutor(20)
-    fs = [executor.submit(status_handler, student, args.status, lms) 
-          for student, _ in marksheet.items()]
-    concurrent.futures.wait(fs)
+def set_status_handler(lms, status, student):    
+    asyncio.run(set_status_dispatch(lms, status, student))

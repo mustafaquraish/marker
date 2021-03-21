@@ -6,6 +6,7 @@ import os, signal
 import subprocess
 from contextlib import contextmanager
 
+from .marksheet import Marksheet
 
 @contextmanager
 def pushd(new_dir):

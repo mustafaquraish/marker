@@ -8,6 +8,7 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
+from ..utils.console import console
 
 def mark_submission(student, cfg):
     '''
@@ -17,11 +18,11 @@ def mark_submission(student, cfg):
 
     Returns: Array of marks for the test cases.
     '''
-    testing_dir = f'candidates/{student}/{cfg["testing_dir"]}'
+    student_dir = f'candidates/{student}'
     mark_list = []
 
     # Go into the testing directory
-    with pushd(testing_dir):
+    with pushd(student_dir):
         # Open the report file
         with open(cfg['report'], 'w') as report_file:
 
@@ -32,7 +33,7 @@ def mark_submission(student, cfg):
             # -----------------------------------------------------------------
 
             # Force recompile if needed
-            if cfg['force_recompile'] and (cfg['compile'] is not None) :
+            if cfg['recompile'] and (cfg['compile'] is not None) :
                 with open(cfg['compile_log'], 'w') as log:
                     run_command(cfg['compile'], timeout=10, output=log)
 
@@ -40,7 +41,7 @@ def mark_submission(student, cfg):
 
             # If the compile log exists, include it in the report based on the
             # provided option in the config file.
-            if cfg['include_compile_log']:
+            if cfg['compile'] and cfg['include_compile_log']:
                 report_file.write('- Compiling code ...\n\n')
                 if os.path.isfile(cfg['compile_log']):
                     with open(cfg['compile_log']) as compile_log:
@@ -59,14 +60,12 @@ def mark_submission(student, cfg):
 
             # -----------------------------------------------------------------
 
-            
-            for test_case in cfg['tests']:
-                # If compilation was fine, run test and append marks to array
-                if run_tests:
+            # If compilation was fine, run test and append marks to array
+            if run_tests:
+                for test_case in cfg['tests']:
                     mark_list.append(run_test(test_case, report_file))
-                # Otherwise just give 0 marks for each test
-                else:
-                    mark_list.append(0)
+            
+            # Otherwise, marklist remains empty
 
             # -----------------------------------------------------------------
 
@@ -77,70 +76,62 @@ def mark_submission(student, cfg):
             report_file.write("-"*79 + '\n\n')
             report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
 
-    print(f"- Marking {student} ... {total_mark} marks.", flush=True)
     return mark_list
 
 # -----------------------------------------------------------------------------
 
-def main(args):
+def run_handler(cfg, student):
 
-    cfg = config.load(args.config)
-    cfg['force_recompile'] = args.recompile
-
+    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
+        console.error("Candidates directory does exist. Quitting.")
+        return
 
     # Enter assignment directory
-    with pushd(args.assgn_dir):
+    with pushd(cfg['assgn_dir']):
 
         # Create a new marksheet, we will initialize it below
         marksheet = Marksheet()
         marksheet_path = cfg['marksheet']
 
+        all_students = sorted(os.listdir('candidates'))
+
         # If we want to force-remark all submissions, don't load the marksheet
         # but just create a new one
-        if args.all:
-            marksheet.add_students(sorted(os.listdir('candidates')))
+        if cfg['all']:
+            marksheet.add_students(all_students)
 
-        # Or if the marksheet doesn't exist, ask the user if they want to make 
-        # a new one for all of the submissions
+        # Or if the marksheet doesn't exist, create a new one with all students
         elif not os.path.exists(marksheet_path):
-            # Prompt the user to create
-            create = input(f"{marksheet_path} does not exist. Create? [Y]/n: ")
-            # Add all the students in the `candidates` directory to marksheet
-            if "n" not in create:
-                marksheet.add_students(sorted(os.listdir('candidates')))
-            else:
-                raise Exception("Marksheet not found or created")
-        
+            marksheet.add_students(all_students)
+            
         # Marksheet exists! Just load it in
         else:
             marksheet.load(marksheet_path)
     
 
-        # If the no_parallels option is set, mark the submissions in serial
-        if (args.no_parallel):
-            for student in marksheet.unmarked():
-                marks_list = mark_submission(student, cfg)
-                marksheet.update(student, marks_list)
-
-        # Otherwise, mark them all in parallel.
+        # If a specific student has been specified, re-run for only them.
+        # Just reset the marksheet
+        if student is not None:
+            if student not in all_students:
+                console.error(student, "submission directory doesn't exist. Stopping.")
+                return
+            students_to_mark = [ student ]
         else:
-            import concurrent.futures
-            with concurrent.futures.ProcessPoolExecutor(20) as executor:
-                futures_dict = {}
-                for student in marksheet.unmarked():
-                    future = executor.submit(mark_submission, student, cfg)
-                    futures_dict[future] = student 
+            students_to_mark = list(marksheet.unmarked_students())
 
-                # As the marks come in, get them and update to marksheet
-                for future in concurrent.futures.as_completed(futures_dict):
-                    student = futures_dict[future]
-                    try:
-                        marks_list = future.result()
-                        marksheet.update(student, marks_list)
-                    except Exception as exc:
-                        print(f'Error when marking {student}: {exc}')
+        if len(students_to_mark) == 0:
+            console.error("Everyone is already marked. Run with -a to re-run, or with"
+                          " an individual student name")
+            return
 
-        # Finally, save (and overwrite) the marksheet
-        marksheet.save(marksheet_path)
+        # Run the marker!
+        for student in console.track(students_to_mark, "Marking"):
+            try:
+                marks_list = mark_submission(student, cfg)
+                marksheet[student] = marks_list
+                marksheet.save(marksheet_path)
+                if cfg["show_marks"]:
+                    console.log(student, "total marks", sum(marks_list))
+            except Exception as e:
+                console.error(f'Error when marking {student}: {e}')
 
-    print("Done.")
