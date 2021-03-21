@@ -4,8 +4,10 @@ Utilities related to interfacing with Canvas
 (C) Mustafa Quraish, 2020
 '''
 import requests
+import aiofiles
+from functools import cached_property
+from ..utils.console import console
 import os
-
 
 class Canvas():
 
@@ -16,15 +18,14 @@ class Canvas():
         self.course_id = config['course']
         self.assgn_id = config['assignment']
         self.cfg = config
-        self.mapping = None
-        self._get_token()
         self.header = {"Authorization": "Bearer " + self.token}
 
     # -------------------------------------------------------------------------
     #       Internal Utils
     # -------------------------------------------------------------------------
 
-    def _get_token(self):
+    @cached_property
+    def token(self):
         '''
         Try to load Canvas token from file. If it doesn't exist, prompt
         the user and give them an option to save it locally.
@@ -36,29 +37,28 @@ class Canvas():
             lst = [line.split(",") for line in open(token_path).readlines()]
             tokens_dict = { url.strip(): token.strip() for url, token in lst }
             if self.base_url in tokens_dict:
-                self.token = tokens_dict[self.base_url]
-                return
+                return tokens_dict[self.base_url]
 
-        token = input("Enter Canvas Token: ").strip()
-        prompt = input(f"Save token in {token_path} ?: [Y]/n")
-        if 'n' not in prompt.lower():
+        token = console.get("Enter Canvas Token").strip()
+        save = console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
+        if save:
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')
+            console.log("Access token saved")
     
-        self.token = token
+        return token
 
     # -------------------------------------------------------------------------
 
-    def _get_mapping(self):
-        if self.mapping is not None:
-            return
+    @cached_property
+    def mapping(self):
 
-        print("- Fetching course users...", end="", flush=True)
+        console.log("Fetching course users")
 
         url = f'{self.base_url}/api/v1/courses/{self.course_id}/users'
         page, res = 1, None
 
-        self.mapping = {}
+        mapping = {}
 
         while (res != []):
             data = {
@@ -72,19 +72,17 @@ class Canvas():
             # is not always available. This makes it easier to test
             for user in res:
                 if 'login_id' in user:
-                    self.mapping[user['login_id']] = user['id']
+                    mapping[user['login_id']] = user['id']
                 elif 'sis_user_id' in user:
-                    self.mapping[user['sis_user_id']] = user['id']
+                    mapping[user['sis_user_id']] = user['id']
                 elif 'email' in user:
                     userid = user['email'].split('@')[0]
-                    self.mapping[userid] = user['id']
+                    mapping[userid] = user['id']
                 else:
                     raise Exception("No suitable column found in canvas data")
             page += 1
-            print(".", end="", flush=True)
 
-        print()
-        return
+        return mapping
 
     # -------------------------------------------------------------------------
 
@@ -109,132 +107,182 @@ class Canvas():
         for sub in submission['submission_history']:
             # Want newest submission that is either not late or allowed to be
             if (not sub["late"]) or self.cfg["allow_late"]:
-                if sub["submitted_at"] > latest_date:
-                    if "attachments" in sub:
-                        file_url = sub["attachments"][0]["url"]
-                        latest_date = sub["submitted_at"]
-
+                if sub["submitted_at"] is not None: 
+                    if sub["submitted_at"] > latest_date:
+                        if "attachments" in sub:
+                            file_url = sub["attachments"][0]["url"]
+                            latest_date = sub["submitted_at"]
         return file_url
 
     # -------------------------------------------------------------------------
     #       Functions meant to be exposed
     # -------------------------------------------------------------------------
 
+    @cached_property
     def students(self):
-        self._get_mapping()
         return self.mapping.keys()
 
     # -------------------------------------------------------------------------
 
-    def get_mapping(self):
-        self._get_mapping()
-        return self.mapping
-
-    # -------------------------------------------------------------------------
-
-    def student_exists(self, student):
-        self._get_mapping()
-        return student in self.mapping
-
-    # -------------------------------------------------------------------------
-
-    def upload_report(self, student_id, report_path):
+    async def upload_report(self, session, student):
         '''
         Upload a file to the comments section of a given assignment for the 
-        given student_id
+        given student
         '''
-        self._get_mapping()
-        if student_id not in self.mapping:
-            raise ValueError(f"{student_id} not in the course.")
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
+            return False
 
-        canvas_id = self.mapping[student_id]
+        canvas_id = self.mapping[student]
+        url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}/comments/files"
 
-        url = (f"{self.base_url}/api/v1/courses/{self.course_id}"
-               f"/assignments/{self.assgn_id}/submissions/{canvas_id}"
-               f"/comments/files")
+        report_path = f'{student}/{self.cfg["report"]}'
+
+        if not os.path.isfile(report_path):
+            console.error(report_path, "doesn't exist.")
+            return False
 
         file_size = os.path.getsize(report_path)
         data = {
-            "name": report_path,
+            "name": self.cfg["report"],
             "size": file_size,
             "content_type": "text/html",
-            "parent_folder_path": "My Files/reports"
         }
 
-        res = requests.post(url, data=data, headers=self.header).json()
+        async with session.post(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
 
         if res.get('error') or res.get('errors'):
+            console.error(student, "error adding submission comment file data")
             return False
 
         url = res.get('upload_url')
         data = {"file": open(report_path, 'rb')}
 
-        res = requests.post(url, files=data, headers=self.header).json()
-        if (res.get('error')):
+        async with session.post(url, data=data, headers=self.header) as resp:
+            try:
+                res = await resp.json()
+            except Exception as e:
+                console.error(student, "error uploading file")
+                # console.log(url, str(data), self.header)
+                return False
+
+        if res.get('error') or res.get('errors'):
+            console.error(student, "error uploading report file")
             return False
 
         url = res.get('location')
-        res = requests.get(url, headers=self.header).json()
+
+        # Verify file upload success
+        async with session.get(url, headers=self.header) as resp:
+            res = await resp.json()
+
         if (res.get('upload_status') != "success"):
+            console.error(student, "error uploading report file")
             return False
 
         file_id = res.get('id')
-        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
-               f"assignments/{self.assgn_id}/submissions/{canvas_id}")
-
+        url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}"
         data = {"comment[file_ids][]": file_id}
-        res = requests.put(url, data=data, headers=self.header).json()
+        async with session.put(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
+        
+        if res.get('error') or res.get('errors'):
+            console.error(student, "error attaching file to comment")
+            return False
 
         return True
 
     # -------------------------------------------------------------------------
 
-    def download_submission(self, student_id, student_dir):
-        self._get_mapping()
-        if student_id not in self.mapping:
-            raise ValueError(f"{student_id} not in the course.")
-        canvas_id = self.mapping[student_id]
+    async def download_submission(self, session, student, late=False):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
+            return False
 
-        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
-               f"assignments/{self.assgn_id}/submissions/{canvas_id}")
+        canvas_id = self.mapping[student]
+
+        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
         data = {"include[]": "submission_history"}
-        res = requests.get(url, data=data, headers=self.header).json()
+
+        async with session.get(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
 
         if res.get('error') or res.get('errors'):
+            console.error(student, "error getting submission details")
             return False
 
         file_url = self._get_file_url(res)
 
         # Found no submissions.
         if file_url is None:
+            console.error(student, "submmission late / not found")
             return False
 
-        res = requests.get(file_url, data={}, headers=self.header)
-        # Assuming no errors returned for now...
-        file_name = self.cfg["file_name"]
-        open(f'{student_dir}/{file_name}', 'wb').write(res.content)
 
+        async with session.get(file_url, data={}, headers=self.header) as resp:
+            content = await resp.content.read()
+            file_path = f'{student}/{self.cfg["file_name"]}'
+            os.makedirs(student, exist_ok=True)
+            f = await aiofiles.open(file_path, mode='wb')
+            await f.write(content)
+            await f.close()
+        
         return True
 
     # -------------------------------------------------------------------------
 
-    def upload_mark(self, student_id, mark_list):
-        self._get_mapping()
-        if student_id not in self.mapping:
-            raise ValueError(f"{student_id} not in the course.")
-        canvas_id = self.mapping[student_id]
+    async def upload_mark(self, session, student, mark_list):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
+            return False
 
-        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/"
-               f"assignments/{self.assgn_id}/submissions/{canvas_id}")
+        canvas_id = self.mapping[student]
+        url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}"
 
         # For Canvas, we can only submit one numerical mark. Take the sum:
         mark = sum(mark_list)
 
-        data = {"submission[posted_grade]": f"{mark}"}
-        res = requests.put(url, data=data, headers=self.header).json()
+        data = {"submission[posted_grade]": mark}
+        async with session.put(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
 
         if res.get('error') or res.get('errors'):
+            console.error(student, "error uploading marks")
             return False
+
+        return True
+
+# -----------------------------------------------------------------------------
+
+    async def delete_report(self, session, student):
+        if student not in self.mapping:
+            console.error(student, "not found in course list")
+            return False
+
+        canvas_id = self.mapping[student]
+        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
+        data = {"include[]": "submission_comments"}
+
+        async with session.get(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
+
+        if res.get('error') or res.get('errors'):
+            console.error(student, "error getting submission details")
+            return False
+
+        for sub_comment in res['submission_comments']:
+            if 'attachments' not in sub_comment:
+                continue
+
+            comment_id = sub_comment['id']
+            comment_url = f"{url}/comments/{comment_id}"
+
+            async with session.delete(comment_url, headers=self.header) as resp:
+                res = await resp.json()
+
+            if res.get("error") or res.get("errors"):
+                console.error(student, "error deleting comment id", comment_id)
 
         return True
 

@@ -1,0 +1,30 @@
+lms: canvas
+base_url: dummy_url
+course: 00000
+assignment: 11111
+
+imports:
+  - tests.py
+
+# No compilation for python, but if solution doesn't exist we can skip tests
+compile_check: ls ./functions.py
+
+tests:
+  - description: "Testing square()"
+    command: python3 tests.py TestFunctions.test_square
+    mark: 1
+    timeout: 1
+
+  - description: "Testing sum_of_squares()"
+    command: python3 tests.py TestFunctions.test_sum_of_squares
+    mark: 2
+    timeout: 2
+
+  - description: "Testing sleep_10_sec()"
+    command: python3 tests.py TestFunctions.test_sleep_10_sec
+    mark: 2
+    timeout: 1
+
+  - description: "Testing exit_with_7()"
+    command: python3 tests.py TestFunctions.test_exit_with_7
+    mark: 1
