@@ -64,5 +64,5 @@ with your environment.
 
 ---
 
-[(Full Documentation](https://marker-docs.readthedocs.io/en/latest/)
+[Full Documentation](https://marker-docs.readthedocs.io/en/latest/)
 
