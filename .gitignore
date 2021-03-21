@@ -6,6 +6,8 @@
 
 build/*
 dist/*
+docs/build
+testing
 *.egg-info
-tests/
-config.yml
+
+repl.py

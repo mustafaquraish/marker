@@ -2,58 +2,45 @@
 
 import os
 import sys
-import concurrent.futures
 
-from ..utils import config
 from ..utils import pushd
 from ..utils import run_command
 from ..utils.marksheet import Marksheet
-
-def prepare_handler(student, cfg):
-    '''
-    Given a student's identifier, Copies over all the files to their directory
-    and compiles them. Assumes that the working directory is the root of the 
-    assignment directory.
-    '''
-    st_path = f'candidates/{student}' 
-    if not os.path.isdir(st_path):
-        return
-
-    # Copy over the extra testing files into the student directory
-    run_command(f"cp -rf extra-files/* {st_path}/")
-    
-    # If a compilation command is set, go into testing directory, and run it. 
-    # Output the logs to the given file.
-    if cfg['compile'] is not None:
-        testing_path = f'{st_path}/{cfg["testing_dir"]}'
-        with pushd(testing_path):
-            print(f"- Compiling {student} ...", flush=True)
-            with open(cfg['compile_log'], 'w') as log:
-                run_command(cfg['compile'], output=log)
+from ..utils.console import console
 
 # -----------------------------------------------------------------------------
 
-def main(args):
+def prepare_handler(cfg, student):
 
-    cfg = config.load(args.config)
+    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
+        console.error("Candidates directory does exist. Quitting.")
+        return
 
-    # Import files from source dir
-    run_command(f'ln -f {args.config} {args.assgn_dir}/config.yml')
-    for item in cfg['imports']:
-        item_path = f'{args.src_dir}/{item}'
-        run_command(f'cp -rf {item_path} {args.assgn_dir}/extra-files/')
+    students = sorted(os.listdir(f'{cfg["assgn_dir"]}/candidates'))
+    if student is not None:
+        if student not in students:
+            console.error(student, "submission directory doesn't exist. Stopping.")
+            return
+        students = [ student ]
 
-    with pushd(args.assgn_dir):
+    # Copy over all the files into each student's directory.
+    for student in console.track(students, "Copying files"):
+        student_path = f'{cfg["assgn_dir"]}/candidates/{student}/'
+        if os.path.exists(student_path):
+            for item in cfg['imports']:
+                item_path = f'{cfg["src_dir"]}/{item}'
+                run_command(f'cp -rf {item_path} {student_path}')
 
-        # Prepare the submissions in parallel
-        with concurrent.futures.ProcessPoolExecutor(20) as executor:
-            for student in sorted(os.listdir('candidates')):
-                executor.submit(prepare_handler, student, cfg)
+    # No compilation command set, leave
+    if cfg['compile'] is None:
+        return
 
-        # Create a blank marksheet.
-        marksheet = Marksheet()
-        marksheet.add_students(sorted(os.listdir('candidates')))
-        marksheet.save(cfg['marksheet'])
-
-    print("Done.")
+    # Compile each of the student's files if needed.
+    for student in console.track(students, "Compiling code"):
+        # If compilation command set, go into testing directory, and run it. 
+        # Output the logs to the given file.
+        testing_path = f'{cfg["assgn_dir"]}/candidates/{student}'
+        with pushd(testing_path):
+            with open(cfg['compile_log'], 'w') as log:
+                run_command(cfg['compile'], output=log)
 

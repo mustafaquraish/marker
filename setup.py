@@ -2,16 +2,18 @@ import os
 import shutil
 import setuptools
 
-os.makedirs('build/_scripts', exist_ok=True)
-shutil.copyfile('marker/main.py', 'build/_scripts/marker')
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='automark',
-    version='1.0.6',
-    scripts=['build/_scripts/marker'],
+    name='marker',
+    version='2.0',
+    entry_points={
+    'console_scripts': [
+            'marker = marker.repl:main',
+        ],
+    },
     author="Mustafa Quraish",
     license="MIT",
     author_email="mustafa@cs.toronto.edu",
@@ -24,7 +26,7 @@ setuptools.setup(
         'marker'
     ],
     install_requires=[
-        'requests', 'pyyaml'
+        'requests', 'pyyaml', 'aiohttp', 'aiofiles', 'cmd2', 'rich'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
