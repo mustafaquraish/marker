@@ -9,8 +9,9 @@ import aiofiles
 
 from ..utils.console import console
 from functools import cached_property
+from .lms_base import LMS
 
-class Markus():
+class Markus(LMS):
 
     def __init__(self, config):
         self.base_url = config['base_url']
@@ -113,7 +114,7 @@ class Markus():
     #       Functions meant to be exposed
     # -------------------------------------------------------------------------
     
-    @ cached_property
+    @cached_property
     def students(self):
         return self.mapping.keys()
 

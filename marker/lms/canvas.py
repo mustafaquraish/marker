@@ -9,7 +9,9 @@ from functools import cached_property
 from ..utils.console import console
 import os
 
-class Canvas():
+from .lms_base import LMS
+
+class Canvas(LMS):
 
     # -------------------------------------------------------------------------
 
