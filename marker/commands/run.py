@@ -9,6 +9,7 @@ from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
 from ..utils.console import console
+import json
 
 def mark_submission(student, cfg):
     '''
@@ -19,64 +20,65 @@ def mark_submission(student, cfg):
     Returns: Array of marks for the test cases.
     '''
     student_dir = f'candidates/{student}'
-    mark_list = []
+
+    result = { "tests": [], "marks": [] }
 
     # Go into the testing directory
     with pushd(student_dir):
-        # Open the report file
-        with open(cfg['report'], 'w') as report_file:
 
-            # Add the report header if needed
-            if cfg['report_header'] is not None:
-                report_file.write(cfg['report_header'] + '\n')
+        # Add the report header if needed
+        if cfg['report_header'] is not None:
+            result["header"] = cfg['report_header'] 
 
-            # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
 
-            # Force recompile if needed
-            if cfg['recompile'] and (cfg['compile'] is not None) :
-                with open(cfg['compile_log'], 'w') as log:
-                    run_command(cfg['compile'], timeout=10, output=log)
+        # Force recompile if needed
+        if cfg['recompile'] and (cfg['compile'] is not None) :
+            _, clog = run_command(cfg['compile'], timeout=10)
+            result["compile_log"] = clog
 
-            # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
 
-            # If the compile log exists, include it in the report based on the
-            # provided option in the config file.
-            if cfg['compile'] and cfg['include_compile_log']:
-                report_file.write('- Compiling code ...\n\n')
-                if os.path.isfile(cfg['compile_log']):
-                    with open(cfg['compile_log']) as compile_log:
-                        report_file.write(compile_log.read() + '\n')
+        # If the compile log exists, include it in the report based on the
+        # provided option in the config file.
+        if cfg['compile'] and cfg['include_compile_log']:
+            if os.path.isfile(cfg['compile_log']):
+                with open(cfg['compile_log']) as compile_log:
+                    result["compile_log"] = compile_log.read()
 
-            # -----------------------------------------------------------------
-            
-            # If a compilation check is set, run the command. If the check 
-            # fails, then we don't have to run any of the tests.
-            run_tests = True
-            if cfg['compile_check'] is not None:
-                status, code = run_command(cfg['compile_check'], timeout=1)
-                if not (status == 'exit' and code == 0):
-                    report_file.write("- Compilation Failed.\n")
-                    run_tests = False
+        # -----------------------------------------------------------------
+        
+        # If a compilation check is set, run the command. If the check 
+        # fails, then we don't have to run any of the tests.
+        run_tests = True
+        if cfg['compile_check'] is not None:
+            code, output = run_command(cfg['compile_check'], timeout=1)
+            if not (code == 0):
+                result["compiled"] = False
+                run_tests = False
+            else:
+                result["compiled"] = True
 
-            # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
 
-            # If compilation was fine, run test and append marks to array
-            if run_tests:
-                for test_case in cfg['tests']:
-                    mark_list.append(run_test(test_case, report_file))
-            
-            # Otherwise, marklist remains empty
+        # If compilation was fine, run test and append marks to array
+        if run_tests:
+            for test_case in cfg['tests']:
+                cur_result = run_test(test_case)
+                result["marks"].append(cur_result["mark"])
+                result["tests"].append(cur_result)
+        
+        # Otherwise, marklist remains empty
 
-            # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
 
-            # Output the total mark to the report for completeness
-            total_out_of = sum(test['mark'] for test in cfg['tests'])
-            total_mark = sum(mark_list)
+        # Output the total mark to the report for completeness
+        result["total"] = sum(result["marks"])
+        
+        with open("results.json", "w") as results_json:
+            json.dump(result, results_json, indent=4)
 
-            report_file.write("-"*79 + '\n\n')
-            report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
-
-    return mark_list
+    return result
 
 # -----------------------------------------------------------------------------
 
@@ -126,12 +128,9 @@ def run_handler(cfg, student):
 
         # Run the marker!
         for student in console.track(students_to_mark, "Marking"):
-            try:
-                marks_list = mark_submission(student, cfg)
-                marksheet[student] = marks_list
-                marksheet.save(marksheet_path)
-                if cfg["show_marks"]:
-                    console.log(student, "total marks", sum(marks_list))
-            except Exception as e:
-                console.error(f'Error when marking {student}: {e}')
+            result = mark_submission(student, cfg)
+            marksheet[student] = result["marks"]
+            marksheet.save(marksheet_path)
+            if cfg["show_marks"]:
+                console.log(student, "total marks", result["total"])
 
