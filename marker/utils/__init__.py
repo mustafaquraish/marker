@@ -16,7 +16,7 @@ def pushd(new_dir):
         os.chdir(previous_dir)
 
 import subprocess as subproc
-import signal, shlex
+import signal
 import time
 
 def run_command(cmd, timeout=None, output=True, limit=-1):
@@ -31,13 +31,12 @@ def run_command(cmd, timeout=None, output=True, limit=-1):
     By default both output is collected and returned, but this can be
     disabled with `output=False`. If so, an empty string is returned.
     '''
-    command = shlex.split(cmd)
-
     stdout_fd = subproc.PIPE if output else subproc.DEVNULL
 
     try:
-        proc = subproc.Popen(command, 
+        proc = subproc.Popen(cmd, 
                              text=True,
+                             shell=True,
                              preexec_fn=os.setsid,
                              stdout=stdout_fd,
                              stderr=subproc.STDOUT

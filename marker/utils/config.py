@@ -1,7 +1,6 @@
 import yaml
 import os
 import sys 
-from .console import console
 
 def set_if_not(config, field, default):
     if field not in config or config[field] is None:
@@ -37,27 +36,10 @@ def set_default_values(config):
         set_if_not(test, 'criteria', config['default_criteria'])
 
 def load(cfg_path):
-    if not os.path.exists(cfg_path):
-        console.error(f"Error: {cfg_path} does not exist.")
-        return prompt_use_empty_config()
-        
     with open(cfg_path) as cfg_file:
-        try:
-            config = yaml.safe_load(cfg_file)
-            if config is None:
-                config = {}
-        except Exception as e:
-            console.error(f"Error: {cfg_path} is not a valid config file.")
-            return prompt_use_empty_config()
+        config = yaml.safe_load(cfg_file)
+        if config is None:
+            config = {}
 
     set_default_values(config)    
     return config
-
-def prompt_use_empty_config():
-    if console.ask("Use default (empty) config?", default=True):
-        config = {}
-        set_default_values(config)    
-        return config
-    else:
-        console.error("Exiting.")
-        sys.exit(1)

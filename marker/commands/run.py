@@ -8,10 +8,9 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
-from ..utils.console import console
 import json
 
-def mark_submission(student, cfg):
+def mark_submission(student, marker):
     '''
     Given a student identifier, run all the test cases defined in the config
     and build the report. The current working directory is expected to be
@@ -19,8 +18,9 @@ def mark_submission(student, cfg):
 
     Returns: Array of marks for the test cases.
     '''
-    student_dir = f'candidates/{student}'
+    cfg = marker.cfg
 
+    student_dir = f'candidates/{student}'
     result = { "tests": [], "marks": [] }
 
     # Go into the testing directory
@@ -82,55 +82,48 @@ def mark_submission(student, cfg):
 
 # -----------------------------------------------------------------------------
 
-def run_handler(cfg, student):
+def run(self, students, recompile, run_all, quiet):
+    print("called run with", students, recompile, run_all, quiet)
 
-    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
-        console.error("Candidates directory does exist. Quitting.")
+    candidates_dir = f'{self.cfg["assgn_dir"]}/candidates'
+    if not os.path.isdir(candidates_dir):
+        self.console.error("Candidates directory does exist. Quitting.")
         return
 
     # Enter assignment directory
-    with pushd(cfg['assgn_dir']):
-
-        # Create a new marksheet, we will initialize it below
-        marksheet = Marksheet()
-        marksheet_path = cfg['marksheet']
+    with pushd(self.cfg['assgn_dir']):
 
         all_students = sorted(os.listdir('candidates'))
 
-        # If we want to force-remark all submissions, don't load the marksheet
-        # but just create a new one
-        if cfg['all']:
-            marksheet.add_students(all_students)
-
-        # Or if the marksheet doesn't exist, create a new one with all students
-        elif not os.path.exists(marksheet_path):
-            marksheet.add_students(all_students)
-            
-        # Marksheet exists! Just load it in
-        else:
+        # Load in an existing marksheet...
+        marksheet_path = self.cfg['marksheet']
+        marksheet = Marksheet()
+        if os.path.isfile(marksheet_path):
             marksheet.load(marksheet_path)
-    
+        # Add all students (in case new ones were downloaded...)
+        marksheet.add_students(all_students)
 
-        # If a specific student has been specified, re-run for only them.
-        # Just reset the marksheet
-        if student is not None:
-            if student not in all_students:
-                console.error(student, "submission directory doesn't exist. Stopping.")
-                return
-            students_to_mark = [ student ]
-        else:
-            students_to_mark = list(marksheet.unmarked_students())
+        # If -a is specified, it takes priority and everyone is run
+        if run_all:
+            students = all_students
+        # Otherwise, if no students specified, only run unmarked ones.
+        elif students == []:
+            students = list(marksheet.unmarked_students())
 
-        if len(students_to_mark) == 0:
-            console.error("Everyone is already marked. Run with -a to re-run, or with"
-                          " an individual student name")
+        if len(students) == 0:
+            self.console.error("Everyone is already marked. Run with -a to "
+                               "re-run, or with an individual student name")
             return
 
+        self.cfg["recompile"] = recompile
+
         # Run the marker!
-        for student in console.track(students_to_mark, "Marking"):
-            result = mark_submission(student, cfg)
+        for student in self.console.track(students, "Marking"):
+            result = mark_submission(student, self)
             marksheet[student] = result["marks"]
+            if not quiet:
+                self.console.log(student, "total marks", result["total"])
+
+            # Update marksheet on disk after every change
             marksheet.save(marksheet_path)
-            if cfg["show_marks"]:
-                console.log(student, "total marks", result["total"])
 

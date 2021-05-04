@@ -6,7 +6,6 @@ Utilities related to interfacing with Canvas
 import requests
 import aiofiles
 from functools import cached_property
-from ..utils.console import console
 import os
 
 from .lms_base import LMS
@@ -41,12 +40,12 @@ class Canvas(LMS):
             if self.base_url in tokens_dict:
                 return tokens_dict[self.base_url]
 
-        token = console.get("Enter Canvas Token").strip()
-        save = console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
+        token = self.console.get("Enter Canvas Token").strip()
+        save = self.console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
         if save:
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')
-            console.log("Access token saved")
+            self.console.log("Access token saved")
     
         return token
 
@@ -55,7 +54,7 @@ class Canvas(LMS):
     @cached_property
     def mapping(self):
 
-        console.log("Fetching course users")
+        self.console.log("Fetching course users")
 
         url = f'{self.base_url}/api/v1/courses/{self.course_id}/users'
         page, res = 1, None
@@ -132,7 +131,7 @@ class Canvas(LMS):
         given student
         '''
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         canvas_id = self.mapping[student]
@@ -141,7 +140,7 @@ class Canvas(LMS):
         report_path = f'{student}/{self.cfg["report"]}'
 
         if not os.path.isfile(report_path):
-            console.error(report_path, "doesn't exist.")
+            self.console.error(report_path, "doesn't exist.")
             return False
 
         file_size = os.path.getsize(report_path)
@@ -155,7 +154,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            console.error(student, "error adding submission comment file data")
+            self.console.error(student, "error adding submission comment file data")
             return False
 
         url = res.get('upload_url')
@@ -165,12 +164,12 @@ class Canvas(LMS):
             try:
                 res = await resp.json()
             except Exception as e:
-                console.error(student, "error uploading file")
-                # console.log(url, str(data), self.header)
+                self.console.error(student, "error uploading file")
+                # self.console.log(url, str(data), self.header)
                 return False
 
         if res.get('error') or res.get('errors'):
-            console.error(student, "error uploading report file")
+            self.console.error(student, "error uploading report file")
             return False
 
         url = res.get('location')
@@ -180,7 +179,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if (res.get('upload_status') != "success"):
-            console.error(student, "error uploading report file")
+            self.console.error(student, "error uploading report file")
             return False
 
         file_id = res.get('id')
@@ -190,7 +189,7 @@ class Canvas(LMS):
             res = await resp.json()
         
         if res.get('error') or res.get('errors'):
-            console.error(student, "error attaching file to comment")
+            self.console.error(student, "error attaching file to comment")
             return False
 
         return True
@@ -199,7 +198,7 @@ class Canvas(LMS):
 
     async def download_submission(self, session, student, late=False):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         canvas_id = self.mapping[student]
@@ -211,14 +210,14 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            console.error(student, "error getting submission details")
+            self.console.error(student, "error getting submission details")
             return False
 
         file_url = self._get_file_url(res)
 
         # Found no submissions.
         if file_url is None:
-            console.error(student, "submmission late / not found")
+            self.console.error(student, "submmission late / not found")
             return False
 
 
@@ -236,7 +235,7 @@ class Canvas(LMS):
 
     async def upload_mark(self, session, student, mark_list):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         canvas_id = self.mapping[student]
@@ -250,7 +249,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            console.error(student, "error uploading marks")
+            self.console.error(student, "error uploading marks")
             return False
 
         return True
@@ -259,7 +258,7 @@ class Canvas(LMS):
 
     async def delete_report(self, session, student):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         canvas_id = self.mapping[student]
@@ -270,7 +269,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            console.error(student, "error getting submission details")
+            self.console.error(student, "error getting submission details")
             return False
 
         for sub_comment in res['submission_comments']:
@@ -284,7 +283,7 @@ class Canvas(LMS):
                 res = await resp.json()
 
             if res.get("error") or res.get("errors"):
-                console.error(student, "error deleting comment id", comment_id)
+                self.console.error(student, "error deleting comment id", comment_id)
 
         return True
 

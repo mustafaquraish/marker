@@ -11,3 +11,9 @@ testing
 *.egg-info
 
 repl.py
+
+node_modules
+
+marksheet.yml
+candidates
+web

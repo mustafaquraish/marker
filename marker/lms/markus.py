@@ -7,7 +7,6 @@ import requests
 import os
 import aiofiles
 
-from ..utils.console import console
 from functools import cached_property
 from .lms_base import LMS
 
@@ -38,12 +37,12 @@ class Markus(LMS):
             if self.base_url in tokens_dict:
                 return tokens_dict[self.base_url]
 
-        token = console.get("Enter MarkUs Token").strip()
-        save = console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
+        token = self.console.get("Enter MarkUs Token").strip()
+        save = self.console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
         if save:
             with open(token_path, 'a') as token_file:
                 token_file.write(f'{self.base_url},{token}\n')
-            console.log("Access token saved")
+            self.console.log("Access token saved")
     
         return token
 
@@ -127,13 +126,13 @@ class Markus(LMS):
     
     async def delete_report(self, session, student):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         group_id = self.mapping[student]
         feedback_files = await self._get_ffs(session, group_id)
         if feedback_files is None:
-            console.error(student, "error getting feedback files.")
+            self.console.error(student, "error getting feedback files.")
             return False
 
         for _, rid in feedback_files.items():
@@ -142,14 +141,14 @@ class Markus(LMS):
                 res = await resp.json()
             
             if int(res['code']) != 200:
-                console.error(student, "error:", res['description'])
+                self.console.error(student, "error:", res['description'])
                 return False
 
     # -------------------------------------------------------------------------
 
     async def upload_report(self, session, student):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         group_id = self.mapping[student]
@@ -158,13 +157,13 @@ class Markus(LMS):
         report_path = f'{student}/{fname}'
 
         if not os.path.isfile(report_path):
-            console.error(report_path, "doesn't exist.")
+            self.console.error(report_path, "doesn't exist.")
             return False
 
         existing_ffs = await self._get_ffs(session, group_id)
 
         if existing_ffs is None:
-            console.error(student, "error getting feedback files.")
+            self.console.error(student, "error getting feedback files.")
             return False
         
         # Report already exists, use PUT to replace
@@ -187,20 +186,20 @@ class Markus(LMS):
                 res = await resp.json()
         
         if 'status' in res and res['status'] == 500:
-            console.error(student, "error uploading report:", res['error'])
+            self.console.error(student, "error uploading report:", res['error'])
             return False
 
         if 200 <= int(res['code']) <= 201:
             return True
         else:
-            console.error(student, "error uploading report:", res['description'])
+            self.console.error(student, "error uploading report:", res['description'])
             return False
         
     # -------------------------------------------------------------------------
 
     async def download_submission(self, session, student):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
         group_id = self.mapping[student]
 
@@ -234,7 +233,7 @@ class Markus(LMS):
     
     async def upload_mark(self, session, student, mark_list):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
 
         group_id = self.mapping[student]
@@ -245,7 +244,7 @@ class Markus(LMS):
             res = await resp.json()
 
         if int(res['code']) != 200:
-            console.error(student, "error uploading mark:", res['description'])
+            self.console.error(student, "error uploading mark:", res['description'])
             return False
 
         return True
@@ -254,7 +253,7 @@ class Markus(LMS):
     
     async def set_status(self, session, student, status):
         if student not in self.mapping:
-            console.error(student, "not found in course list")
+            self.console.error(student, "not found in course list")
             return False
         group_id = self.mapping[student]
 
@@ -265,7 +264,7 @@ class Markus(LMS):
             res = await resp.json()
 
         if int(res['code']) != 200:
-            console.error(student, "error setting status:", res['description'])
+            self.console.error(student, "error setting status:", res['description'])
             return False
 
         return True

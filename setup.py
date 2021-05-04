@@ -11,7 +11,7 @@ setuptools.setup(
     version='2.0',
     entry_points={
     'console_scripts': [
-            'marker = marker.repl:main',
+            'marker = marker.repl.repl:main',
         ],
     },
     author="Mustafa Quraish",

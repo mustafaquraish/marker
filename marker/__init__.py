@@ -1,62 +1,56 @@
 from .utils import config
 from .utils.marksheet import Marksheet
 from .utils import pushd
-from .utils.console import console
-
+import os
 from .lms import LMS_Factory
-
-from .commands.download import download_handler
-from .commands.prepare import prepare_handler
-from .commands.run import run_handler
-from .commands.upload_marks import upload_mark_handler
-from .commands.upload_reports import upload_report_handler
-from .commands.delete_reports import delete_report_handler
-from .commands.set_status import set_status_handler
-from .commands.stats import stats_handler
 
 from functools import cached_property
 
 import asyncio
 
+from .repl.console import REPLConsole
+
 class Marker():
-    def __init__(self, args):
+    def __init__(self, args, console=REPLConsole()):
         config_path = args["config"]
-        self.cfg = config.load(config_path)
+        try:
+            self.cfg = config.load(config_path)
+        except FileNotFoundError:
+            console.error(f"Could not find {config_path}. Exiting.")
+            exit(1)
         self.cfg.update(args)
+        self.console = console
         console.log("Config loaded")
     
     @cached_property
     def lms(self):
-        return LMS_Factory(self.cfg)
+        lms_instance = LMS_Factory(self.cfg)
+        lms_instance.console = self.console
+        return lms_instance    
 
-    def download_submissions(self, student=None, late=False):
-        return download_handler(self.cfg, self.lms, student, late)
-
-    def prepare(self, student=None):
-        return prepare_handler(self.cfg, student)
-
-    def run(self, student=None, recompile=False, all=False, quiet=False):
-        """
-        Run takes in some additional arguments to augment behaviour such as
-        forcing recompilation and running for all students.
-        """
-        new_cfg = self.cfg.copy()
-        new_cfg['all'] = all
-        new_cfg['recompile'] = recompile
-        new_cfg['show_marks'] = (not quiet)
-        return run_handler(new_cfg, student)
+    def getMarksheet(self):
+        marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
+        if not os.path.exists(marksheet_path):
+            self.console.error(marksheet_path, "file not found. Stopping.")
+            return None
+        return Marksheet(marksheet_path)
     
-    def upload_reports(self, student=None):
-        return upload_report_handler(self.cfg, self.lms, student)
+    def getStudentDir(self, student):
+        student_dir = f'{self.cfg["assgn_dir"]}/candidates/{student}'
+        if not os.path.exists(student_dir):
+            self.console.error(student_dir, "dir not found. Stopping.")
+            return None
+        return student_dir
 
-    def upload_marks(self, student=None):
-        return upload_mark_handler(self.cfg, self.lms, student)
 
-    def delete_reports(self, student=None):
-        return delete_report_handler(self.cfg, self.lms, student)
+    # Import in the specific command handlers...
 
-    def set_status(self, status, student=None):
-        return set_status_handler(self.lms, status, student)
+    from .commands.prepare import prepare
+    from .commands.stats import stats
+    from .commands.run import run
 
-    def stats(self, student=None, minimal=False):
-        return stats_handler(self.cfg, student, minimal)
+    from .commands.delete_reports import delete_reports
+    from .commands.upload_reports import upload_reports
+    from .commands.upload_marks import upload_marks
+    from .commands.set_status import set_status
+    from .commands.download import download

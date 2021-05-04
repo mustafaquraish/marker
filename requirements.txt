@@ -1,0 +1,6 @@
+requests
+pyyaml
+aiohttp
+aiofiles
+cmd2
+rich
