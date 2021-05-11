@@ -16,11 +16,14 @@ class Markus(LMS):
         self.base_url = config['base_url']
         self.assignment = config['assignment']
         self.cfg = config
-        self.header = {"Authorization": "MarkUsAuth " + self.token}
 
     # -------------------------------------------------------------------------
     #       Internal utils
     # -------------------------------------------------------------------------
+    
+    @cached_property 
+    def header(self):
+        return {"Authorization": "MarkUsAuth " + self.token}
 
     @cached_property
     def token(self):

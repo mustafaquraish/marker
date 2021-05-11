@@ -2,6 +2,8 @@ from .utils import config
 from .utils.marksheet import Marksheet
 from .utils import pushd
 import os
+import sys
+from sys import exit
 from .lms import LMS_Factory
 
 from functools import cached_property
@@ -16,6 +18,9 @@ class Marker():
         try:
             self.cfg = config.load(config_path)
         except FileNotFoundError:
+            print("CWD:", os.getcwd(),file=sys.stderr)
+            print("ABS", os.path.abspath(args["config"]))
+            print("exist?:", os.path.exists( os.path.abspath(args["config"])),file=sys.stderr)
             console.error(f"Could not find {config_path}. Exiting.")
             exit(1)
         self.cfg.update(args)
@@ -31,8 +36,8 @@ class Marker():
     def getMarksheet(self):
         marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
         if not os.path.exists(marksheet_path):
-            self.console.error(marksheet_path, "file not found. Stopping.")
-            return None
+            self.console.error(marksheet_path, "file not found.")
+            return Marksheet()
         return Marksheet(marksheet_path)
     
     def getStudentDir(self, student):

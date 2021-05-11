@@ -94,9 +94,9 @@ class Marksheet():
         Optionally, return marks for only compiled submissions.
         '''
         if only_compiled:
-            return [sum(marks) for marks in self.data.values() if marks != []] 
+            return [sum(marks) for _, marks in self.marked_items() if marks != []] 
         else:
-            return [sum(marks) for marks in self.data.values()]
+            return [sum(marks) for _, marks in self.marked_items()]
 
     def num_marked(self):
         return len(self.get_mark_totals(False))

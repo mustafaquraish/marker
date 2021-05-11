@@ -4,9 +4,9 @@ import rich
 from rich.console import Console as RichConsole
 from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 
-from ..utils.console import Console
+from ..utils.console import ConsoleABC
 
-class REPLConsole(Console, RichConsole):
+class REPLConsole(ConsoleABC, RichConsole):
     def __init__(self):
         super().__init__()
     

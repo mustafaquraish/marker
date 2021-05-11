@@ -37,11 +37,9 @@ def mark_submission(student, marker):
             _, clog = run_command(cfg['compile'], timeout=10)
             result["compile_log"] = clog
 
-        # -----------------------------------------------------------------
-
         # If the compile log exists, include it in the report based on the
         # provided option in the config file.
-        if cfg['compile'] and cfg['include_compile_log']:
+        elif cfg['compile'] and cfg['include_compile_log']:
             if os.path.isfile(cfg['compile_log']):
                 with open(cfg['compile_log']) as compile_log:
                     result["compile_log"] = compile_log.read()
@@ -75,7 +73,7 @@ def mark_submission(student, marker):
         # Output the total mark to the report for completeness
         result["total"] = sum(result["marks"])
         
-        with open("results.json", "w") as results_json:
+        with open(cfg["report"], "w") as results_json:
             json.dump(result, results_json, indent=4)
 
     return result

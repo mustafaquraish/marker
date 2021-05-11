@@ -21,20 +21,23 @@ def prepare(self, students):
     if students == []:
         students = all_students
 
+    no_compile = self.cfg['compile'] is None
+
     # Copy over all the files into each student's directory.
-    for student in self.console.track(students, "Copying files"):
+    for student in self.console.track(students, "Preparing Submissions"):
         student_path = f'{candidates_dir}/{student}/'
         if os.path.exists(student_path):
             for item in self.cfg['imports']:
                 item_path = f'{self.cfg["src_dir"]}/{item}'
                 run_command(f'cp -rf {item_path} {student_path}')
+        else:
+            self.console.error(student_path, "does not exist.")
+            continue
 
-    # No compilation command set, leave
-    if self.cfg['compile'] is None:
-        return
+        # No compilation command set, ignore
+        if no_compile:
+            continue
 
-    # Compile each of the student's files if needed.
-    for student in self.console.track(students, "Compiling code"):
         # If compilation command set, go into testing directory, and run it. 
         # Output the logs to the given file.
         student_path = f'{candidates_dir}/{student}/'

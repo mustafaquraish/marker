@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class Console(ABC):
+class ConsoleABC(ABC):
 
     @abstractmethod
     def error(self, *args, **kwargs):

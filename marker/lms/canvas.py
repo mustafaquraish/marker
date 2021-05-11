@@ -19,11 +19,14 @@ class Canvas(LMS):
         self.course_id = config['course']
         self.assgn_id = config['assignment']
         self.cfg = config
-        self.header = {"Authorization": "Bearer " + self.token}
 
     # -------------------------------------------------------------------------
     #       Internal Utils
     # -------------------------------------------------------------------------
+
+    @cached_property
+    def header(self):
+        return {"Authorization": "Bearer " + self.token}
 
     @cached_property
     def token(self):

@@ -22,6 +22,7 @@ async def download_dispatch(lms, students):
     async with aiohttp.ClientSession(connector=connector) as session: 
         tasks = [lms.download_submission(session, student) for student in students]
         await lms.console.track_async(tasks, "Downloading submissions")
+    return students
 
 # -----------------------------------------------------------------------------
 
@@ -33,4 +34,16 @@ def download(self, students, allow_late=False):
     self.lms.cfg["allow_late"] = allow_late
 
     with pushd(candidates_dir):
-        asyncio.run(download_dispatch(self.lms, students))
+        students = asyncio.run(download_dispatch(self.lms, students))
+    
+
+    # Populate missing students into the marksheet...
+
+    # Load in an existing marksheet...
+    marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
+    marksheet = Marksheet()
+    if os.path.isfile(marksheet_path):
+        marksheet.load(marksheet_path)
+    # Add all students (in case new ones were downloaded...)
+    marksheet.add_students(students)
+    marksheet.save(marksheet_path)

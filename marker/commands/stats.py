@@ -43,8 +43,5 @@ def stats(self, minimal, students):
 
     results["distribution"] = marksheet.get_distribution()
 
-    import json
-    print(json.dumps(results, indent=4))
-
     return results
     
