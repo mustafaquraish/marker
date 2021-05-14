@@ -8,7 +8,7 @@ from ..utils.marksheet import Marksheet
 
 def stats(self, minimal, students):
 
-    marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
+    marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
     if not os.path.isfile(marksheet_path):
         self.console.error("Marksheet does not exist.")
         return

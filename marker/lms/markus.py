@@ -8,7 +8,8 @@ import os
 import aiofiles
 
 from functools import cached_property
-from .lms_base import LMS
+from .base import LMS
+from ..utils.token import get_or_prompt_token
 
 class Markus(LMS):
 
@@ -16,6 +17,7 @@ class Markus(LMS):
         self.base_url = config['base_url']
         self.assignment = config['assignment']
         self.cfg = config
+        super().__init__("markus", self.base_url)
 
     # -------------------------------------------------------------------------
     #       Internal utils
@@ -25,40 +27,19 @@ class Markus(LMS):
     def header(self):
         return {"Authorization": "MarkUsAuth " + self.token}
 
-    @cached_property
-    def token(self):
-        '''
-        Try to load MarkUs token from file. If it doesn't exist, prompt
-        the user and give them an option to save it locally.
-        '''
-        from pathlib import Path
-
-        token_path = f"{Path.home()}/.markus.tokens"
-        if os.path.exists(token_path):
-            lst = [line.split(",") for line in open(token_path).readlines()]
-            tokens_dict = { url.strip(): token.strip() for url, token in lst }
-            if self.base_url in tokens_dict:
-                return tokens_dict[self.base_url]
-
-        token = self.console.get("Enter MarkUs Token").strip()
-        save = self.console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
-        if save:
-            with open(token_path, 'a') as token_file:
-                token_file.write(f'{self.base_url},{token}\n')
-            self.console.log("Access token saved")
-    
-        return token
-
     # -------------------------------------------------------------------------
 
     @cached_property
     def mapping(self):
-        mapp = {}
         url = f'{self.base_url}/api/assignments/{self.assgn_id}/groups.json'
-        res = requests.get(url, data={}, headers=self.header).json()
+        response = requests.get(url, headers=self.header)
+        if response.status_code >= 400:
+            raise Exception("Error fetching students")
+        res = response.json()
+        mapping = {}
         for group in res:
-            mapp[group['group_name']] = group['id']
-        return mapp
+            mapping[group['group_name']] = group['id']
+        return mapping
 
     # -------------------------------------------------------------------------
 
@@ -68,8 +49,11 @@ class Markus(LMS):
         Fetch the assignment id given the short identifier
         '''
         url = f'{self.base_url}/api/assignments.json'
-        res = requests.get(url, data={}, headers=self.header).json()
-        
+        response = requests.get(url, headers=self.header)
+        if response.status_code >= 400:
+            raise Exception("Error fetching assignment id")
+        res = response.json()
+
         match = filter(lambda a: a['short_identifier'] == self.assignment, res)
         match = list(match)
 
@@ -121,11 +105,6 @@ class Markus(LMS):
         return self.mapping.keys()
 
     # -------------------------------------------------------------------------
-
-    def student_exists(self, student):
-        return student in self.mapping
-
-    # -------------------------------------------------------------------------
     
     async def delete_report(self, session, student):
         if student not in self.mapping:
@@ -157,7 +136,7 @@ class Markus(LMS):
         group_id = self.mapping[student]
         
         fname = self.cfg["report"]
-        report_path = f'{student}/{fname}'
+        report_path = os.path.join(student, fname)
 
         if not os.path.isfile(report_path):
             self.console.error(report_path, "doesn't exist.")
@@ -217,7 +196,7 @@ class Markus(LMS):
                 data = { 'filename': fname, 'collected': collected}
                 async with session.get(url, data=data, headers=self.header) as resp:
                     content = await resp.content.read()
-                    file_path = f'{student}/{fname}'
+                    file_path = os.path.join(student, fname)
                     os.makedirs(student, exist_ok=True)
                     f = await aiofiles.open(file_path, mode='wb')
                     await f.write(content)
@@ -226,7 +205,7 @@ class Markus(LMS):
             data = {'collected': collected}
             async with session.get(url, data=data, headers=self.header) as resp:
                 content = await resp.content.read()
-                file_path = f'{student}/{student}.zip'
+                file_path = os.path.join(student, student + ".zip")
                 os.makedirs(student, exist_ok=True)
                 f = await aiofiles.open(file_path, mode='wb')
                 await f.write(content)

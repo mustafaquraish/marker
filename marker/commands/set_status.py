@@ -6,7 +6,6 @@ import asyncio
 
 from ..utils.marksheet import Marksheet
 from ..utils import config
-from ..lms import LMS_Factory
 
 
 async def set_status_dispatch(lms, status, students):

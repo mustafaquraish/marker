@@ -8,17 +8,18 @@ import aiofiles
 from functools import cached_property
 import os
 
-from .lms_base import LMS
+from .base import LMS
+from ..utils.token import get_or_prompt_token
 
 class Canvas(LMS):
-
-    # -------------------------------------------------------------------------
 
     def __init__(self, config):
         self.base_url = config['base_url']
         self.course_id = config['course']
         self.assgn_id = config['assignment']
         self.cfg = config
+        super().__init__("canvas", self.base_url)
+
 
     # -------------------------------------------------------------------------
     #       Internal Utils
@@ -27,30 +28,6 @@ class Canvas(LMS):
     @cached_property
     def header(self):
         return {"Authorization": "Bearer " + self.token}
-
-    @cached_property
-    def token(self):
-        '''
-        Try to load Canvas token from file. If it doesn't exist, prompt
-        the user and give them an option to save it locally.
-        '''
-        from pathlib import Path
-
-        token_path = f"{Path.home()}/.canvas.tokens"
-        if os.path.exists(token_path):
-            lst = [line.split(",") for line in open(token_path).readlines()]
-            tokens_dict = { url.strip(): token.strip() for url, token in lst }
-            if self.base_url in tokens_dict:
-                return tokens_dict[self.base_url]
-
-        token = self.console.get("Enter Canvas Token").strip()
-        save = self.console.ask(f"Save token in [red]{token_path}[/red]?", default=True)
-        if save:
-            with open(token_path, 'a') as token_file:
-                token_file.write(f'{self.base_url},{token}\n')
-            self.console.log("Access token saved")
-    
-        return token
 
     # -------------------------------------------------------------------------
 
@@ -75,13 +52,13 @@ class Canvas(LMS):
             # Pick the field as the identifier. For archived courses, login_id
             # is not always available. This makes it easier to test
             for user in res:
-                if 'login_id' in user:
+                if 'email' in user:
+                    userid = user['email'].split('@')[0]
+                    mapping[userid] = user['id']
+                elif 'login_id' in user:
                     mapping[user['login_id']] = user['id']
                 elif 'sis_user_id' in user:
                     mapping[user['sis_user_id']] = user['id']
-                elif 'email' in user:
-                    userid = user['email'].split('@')[0]
-                    mapping[userid] = user['id']
                 else:
                     raise Exception("No suitable column found in canvas data")
             page += 1
@@ -140,7 +117,7 @@ class Canvas(LMS):
         canvas_id = self.mapping[student]
         url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}/comments/files"
 
-        report_path = f'{student}/{self.cfg["report"]}'
+        report_path = os.path.join(student, self.cfg["report"])
 
         if not os.path.isfile(report_path):
             self.console.error(report_path, "doesn't exist.")
@@ -157,7 +134,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            self.console.error(student, "error adding submission comment file data")
+            self.console.error(student+":", res['errors'][0]['message'])
             return False
 
         url = res.get('upload_url')
@@ -226,7 +203,7 @@ class Canvas(LMS):
 
         async with session.get(file_url, data={}, headers=self.header) as resp:
             content = await resp.content.read()
-            file_path = f'{student}/{self.cfg["file_name"]}'
+            file_path = os.path.join(student, self.cfg["file_name"])
             os.makedirs(student, exist_ok=True)
             f = await aiofiles.open(file_path, mode='wb')
             await f.write(content)
@@ -252,7 +229,7 @@ class Canvas(LMS):
             res = await resp.json()
 
         if res.get('error') or res.get('errors'):
-            self.console.error(student, "error uploading marks")
+            self.console.error(f'{student}:', res['errors'][0]['message'])
             return False
 
         return True

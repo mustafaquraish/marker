@@ -13,6 +13,7 @@ testing
 repl.py
 
 node_modules
+*.code-workspace
 
 marksheet.yml
 candidates

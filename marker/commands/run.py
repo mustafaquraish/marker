@@ -8,6 +8,7 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
+from ..utils.report import generate_report 
 import json
 
 def mark_submission(student, marker):
@@ -20,7 +21,7 @@ def mark_submission(student, marker):
     '''
     cfg = marker.cfg
 
-    student_dir = f'candidates/{student}'
+    student_dir = os.path.join('candidates', student)
     result = { "tests": [], "marks": [] }
 
     # Go into the testing directory
@@ -31,6 +32,8 @@ def mark_submission(student, marker):
             result["header"] = cfg['report_header'] 
 
         # -----------------------------------------------------------------
+        
+        result["compile_log"] = ""
 
         # Force recompile if needed
         if cfg['recompile'] and (cfg['compile'] is not None) :
@@ -39,10 +42,10 @@ def mark_submission(student, marker):
 
         # If the compile log exists, include it in the report based on the
         # provided option in the config file.
-        elif cfg['compile'] and cfg['include_compile_log']:
-            if os.path.isfile(cfg['compile_log']):
-                with open(cfg['compile_log']) as compile_log:
-                    result["compile_log"] = compile_log.read()
+        elif os.path.isfile(cfg['compile_log']):
+            with open(cfg['compile_log']) as compile_log:
+                result["compile_log"] = compile_log.read()
+            
 
         # -----------------------------------------------------------------
         
@@ -73,17 +76,19 @@ def mark_submission(student, marker):
         # Output the total mark to the report for completeness
         result["total"] = sum(result["marks"])
         
-        with open(cfg["report"], "w") as results_json:
-            json.dump(result, results_json, indent=4)
+        with open(cfg["results"], "w") as results_json:
+            json.dump(result, results_json, indent=2)
+
+        with open(cfg["report"], "w") as report_file:
+            report_text = generate_report(result, cfg)
+            report_file.write(report_text)
 
     return result
 
 # -----------------------------------------------------------------------------
 
 def run(self, students, recompile, run_all, quiet):
-    print("called run with", students, recompile, run_all, quiet)
-
-    candidates_dir = f'{self.cfg["assgn_dir"]}/candidates'
+    candidates_dir = os.path.join(self.cfg["assgn_dir"], "candidates")
     if not os.path.isdir(candidates_dir):
         self.console.error("Candidates directory does exist. Quitting.")
         return

@@ -8,7 +8,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='marker',
-    version='2.0',
+    version='2.1',
     entry_points={
     'console_scripts': [
             'marker = marker.repl.repl:main',

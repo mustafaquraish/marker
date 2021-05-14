@@ -86,8 +86,6 @@ class Marksheet():
 
     # --------------------- Statistics ----------------------------------------
 
-
-    
     def get_mark_totals(self, only_compiled=False):
         '''
         Returns an array of (summed) total marks for each marked student.

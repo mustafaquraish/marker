@@ -6,7 +6,6 @@ import asyncio
 
 from ..utils import pushd
 from ..utils import config
-from ..lms import LMS_Factory
 
 async def upload_report_dispatch(lms, students):
     '''
@@ -22,6 +21,9 @@ async def upload_report_dispatch(lms, students):
 
 
 def upload_reports(self, students):
-    candidates_dir = f'{self.cfg["assgn_dir"]}/candidates'
+    # Force an error if token is missing...
+    _ = self.lms.token
+
+    candidates_dir = os.path.join(self.cfg["assgn_dir"], "candidates")
     with pushd(candidates_dir):
         asyncio.run(upload_report_dispatch(self.lms, students))

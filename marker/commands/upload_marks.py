@@ -6,7 +6,6 @@ import asyncio
 
 from ..utils.marksheet import Marksheet
 from ..utils import config
-from ..lms import LMS_Factory
 
 
 async def upload_mark_dispatch(lms, marksheet, students):
@@ -23,7 +22,10 @@ async def upload_mark_dispatch(lms, marksheet, students):
 
 
 def upload_marks(self, students):
-    marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
+    # Force an error if token is missing...
+    _ = self.lms.token
+    
+    marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])    
     if not os.path.exists(marksheet_path):
         self.console.error(marksheet_path, "file not found. Stopping.")
         return

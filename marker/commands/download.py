@@ -8,7 +8,6 @@ import asyncio
 from ..utils import config
 from ..utils import pushd
 from ..utils.marksheet import Marksheet
-from ..lms import LMS_Factory
 
 
 # Handler to download submission for each process
@@ -18,29 +17,28 @@ async def download_dispatch(lms, students):
     '''
     if students == []:
         students = lms.students
+    
     connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session: 
         tasks = [lms.download_submission(session, student) for student in students]
-        await lms.console.track_async(tasks, "Downloading submissions")
-    return students
+        return await lms.console.track_async(tasks, "Downloading submissions")
 
 # -----------------------------------------------------------------------------
 
 def download(self, students, allow_late=False):
     self.console.log("Making directory structure")
-    candidates_dir = f'{self.cfg["assgn_dir"]}/candidates'
+    candidates_dir = os.path.join(self.cfg["assgn_dir"], "candidates")
     os.makedirs(candidates_dir, exist_ok=True)
 
     self.lms.cfg["allow_late"] = allow_late
 
     with pushd(candidates_dir):
         students = asyncio.run(download_dispatch(self.lms, students))
-    
 
     # Populate missing students into the marksheet...
 
     # Load in an existing marksheet...
-    marksheet_path = f'{self.cfg["assgn_dir"]}/{self.cfg["marksheet"]}'
+    marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
     marksheet = Marksheet()
     if os.path.isfile(marksheet_path):
         marksheet.load(marksheet_path)
