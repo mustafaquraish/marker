@@ -10,7 +10,7 @@ docs/build
 testing
 *.egg-info
 
-repl.py
+./repl.py
 
 node_modules
 *.code-workspace
