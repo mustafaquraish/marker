@@ -8,10 +8,10 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name='marker',
-    version='2.0',
+    version='2.1.0',
     entry_points={
     'console_scripts': [
-            'marker = marker.repl:main',
+            'marker = marker.repl.repl:main',
         ],
     },
     author="Mustafa Quraish",
@@ -22,11 +22,8 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/mustafaquraish/marker",
     packages=setuptools.find_packages(),
-    py_modules=[
-        'marker'
-    ],
     install_requires=[
-        'requests', 'pyyaml', 'aiohttp', 'aiofiles', 'cmd2', 'rich'
+        'requests', 'pyyaml', 'aiohttp', 'aiofiles', 'cmd2', 'rich', 'jinja2'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

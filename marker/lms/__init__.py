@@ -1,21 +1,30 @@
-from .canvas import Canvas
 from .markus import Markus
-from ..utils.console import console
+from .canvas import Canvas
 
-def LMS_Factory(config):
-    assert('lms' in config), "Must have an LMS in the config"
-    assert('base_url' in config), "Must have base url for LMS in config"
-    assert('assignment' in config), "Must have assignment ID in config"
+class LMSFactory:
+    __mapping = {}
 
-    # If the base_URL has a trailing '/', remove it
-    if config["base_url"][-1] == "/":
-        config["base_url"] = config["base_url"][:-1]
-
-    if config['lms'].lower() == 'canvas':
-        assert('course' in config), "Must have course ID in Config for Canvas"
-        assert('file_name' in config), "Must have name for downloaded file"
-        return Canvas(config)
+    @staticmethod
+    def register(cls, name, required_params=["lms"]):
+        LMSFactory.__mapping[name] = (cls, required_params)
     
-    elif config['lms'].lower() == 'markus':
-        # raise Exception("MarkUs Not supported yet")
-        return Markus(config)
+    @staticmethod
+    def create(config):
+        if "lms" not in config:
+            raise ValueError(f"config does not have `lms` defined.")
+        name = config["lms"]
+        if name not in LMSFactory.__mapping:
+            raise ValueError(f"LMS name `{name}` not found.")
+        cls, required_params = LMSFactory.__mapping[name]
+        for param in required_params:
+            if param not in config or config[param] is None:
+                raise ValueError(f"config[{param}] is missing or null.")
+        
+        # Clean URL:
+        if "base_url" in config and config["base_url"][-1] == "/":
+            config["base_url"] = config["base_url"][:-1]
+
+        return cls(config)
+
+LMSFactory.register(Markus, 'markus', ['base_url', 'assignment'])
+LMSFactory.register(Canvas, 'canvas', ['base_url', 'course', 'assignment'])

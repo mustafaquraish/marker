@@ -39,17 +39,10 @@ Alternatively, if you want to develop, you will need to build from source. First
 git clone https://github.com/mustafaquraish/marker
 ```
 
-Then, go into the cloned repo and use the Makefile to build and install
+Then, go into the cloned repo and and install using
 ```bash
 cd marker
-make install
-```
-
-Alternatively, use the following commands to build and install yourself if your preferred `python` and `pip` executables are named differently:
-
-```
-python3 setup.py bdist_wheel
-pip3 install dist/*     
+python3 setup.py install
 ```
 
 ---

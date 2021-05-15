@@ -1,12 +1,16 @@
 '''
 Just contains some general utilities needed for all the scripts.
 '''
-
-import os, signal
-import subprocess
+import os
 from contextlib import contextmanager
 
 from .marksheet import Marksheet
+from .tests import run_command, run_test
+
+from pathlib import Path
+
+HOMEDIR = os.path.abspath(Path.home())
+CONFIG_DIR = os.path.join(HOMEDIR, ".config", "marker")
 
 @contextmanager
 def pushd(new_dir):
@@ -17,29 +21,6 @@ def pushd(new_dir):
     finally:
         os.chdir(previous_dir)
 
-def run_command(cmd, timeout=None, output=subprocess.DEVNULL):
-    '''
-    Run the command `cmd` in the current working directory, and return the 
-    status.The command is run for a maximum of `timeout` seconds, and the 
-    stdout/stderr are redirected to `output`.
-
-    Returns: Either
-        ('exit', exit_status)
-            OR
-        ('timeout', None)
-    '''
-    if timeout is not None:
-        cmd = f"timeout {timeout} bash -c '{cmd}'"
-
-    exit_status = subprocess.call(
-        cmd,
-        stdout=output,
-        stderr=output,
-        shell=True
-    )
-
-    # The exit code from `timeout` is 124 if process times out
-    if exit_status == 124:
-        return ('timeout', None)
-    else:
-        return ('exit', exit_status)
+def ensure_config_dir():
+    if not os.path.isdir(CONFIG_DIR):
+        os.makedirs(CONFIG_DIR, exist_ok=True)

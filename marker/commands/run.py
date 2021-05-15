@@ -8,9 +8,10 @@ from ..utils import pushd
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
-from ..utils.console import console
+from ..utils.report import generate_report 
+import json
 
-def mark_submission(student, cfg):
+def mark_submission(student, marker):
     '''
     Given a student identifier, run all the test cases defined in the config
     and build the report. The current working directory is expected to be
@@ -18,120 +19,112 @@ def mark_submission(student, cfg):
 
     Returns: Array of marks for the test cases.
     '''
-    student_dir = f'candidates/{student}'
-    mark_list = []
+    cfg = marker.cfg
+
+    student_dir = os.path.join('candidates', student)
+    result = { "tests": [], "marks": [] }
+    result["out_of"] = sum(test["mark"] for test in cfg["tests"])
+
 
     # Go into the testing directory
     with pushd(student_dir):
-        # Open the report file
-        with open(cfg['report'], 'w') as report_file:
 
-            # Add the report header if needed
-            if cfg['report_header'] is not None:
-                report_file.write(cfg['report_header'] + '\n')
+        # -----------------------------------------------------------------
+        
+        result["compile_log"] = ""
 
-            # -----------------------------------------------------------------
+        # Force recompile if needed
+        if cfg['recompile'] and (cfg['compile'] is not None) :
+            _, clog = run_command(cfg['compile'], timeout=10)
+            result["compile_log"] = clog
 
-            # Force recompile if needed
-            if cfg['recompile'] and (cfg['compile'] is not None) :
-                with open(cfg['compile_log'], 'w') as log:
-                    run_command(cfg['compile'], timeout=10, output=log)
-
-            # -----------------------------------------------------------------
-
-            # If the compile log exists, include it in the report based on the
-            # provided option in the config file.
-            if cfg['compile'] and cfg['include_compile_log']:
-                report_file.write('- Compiling code ...\n\n')
-                if os.path.isfile(cfg['compile_log']):
-                    with open(cfg['compile_log']) as compile_log:
-                        report_file.write(compile_log.read() + '\n')
-
-            # -----------------------------------------------------------------
+        # If the compile log exists, include it in the report based on the
+        # provided option in the config file.
+        elif os.path.isfile(cfg['compile_log']):
+            with open(cfg['compile_log']) as compile_log:
+                result["compile_log"] = compile_log.read()
             
-            # If a compilation check is set, run the command. If the check 
-            # fails, then we don't have to run any of the tests.
-            run_tests = True
-            if cfg['compile_check'] is not None:
-                status, code = run_command(cfg['compile_check'], timeout=1)
-                if not (status == 'exit' and code == 0):
-                    report_file.write("- Compilation Failed.\n")
-                    run_tests = False
 
-            # -----------------------------------------------------------------
+        # -----------------------------------------------------------------
+        
+        # If a compilation check is set, run the command. If the check 
+        # fails, then we don't have to run any of the tests.
+        run_tests = True
+        if cfg['compile_check'] is not None:
+            code, output = run_command(cfg['compile_check'], timeout=1)
+            if not (code == 0):
+                result["compiled"] = False
+                run_tests = False
+            else:
+                result["compiled"] = True
 
-            # If compilation was fine, run test and append marks to array
-            if run_tests:
-                for test_case in cfg['tests']:
-                    mark_list.append(run_test(test_case, report_file))
-            
-            # Otherwise, marklist remains empty
+        # -----------------------------------------------------------------
 
-            # -----------------------------------------------------------------
+        # If compilation was fine, run test and append marks to array
+        if run_tests:
+            for test_case in cfg['tests']:
+                cur_result = run_test(test_case)
+                result["marks"].append(cur_result["mark"])
+                result["tests"].append(cur_result)
+        
+        # Otherwise, marklist remains empty
 
-            # Output the total mark to the report for completeness
-            total_out_of = sum(test['mark'] for test in cfg['tests'])
-            total_mark = sum(mark_list)
+        # -----------------------------------------------------------------
 
-            report_file.write("-"*79 + '\n\n')
-            report_file.write(f" TOTAL MARKS: {total_mark} / {total_out_of}\n")
+        # Output the total mark to the report for completeness
+        result["total"] = sum(result["marks"])
+        
+        with open(cfg["results"], "w") as results_json:
+            json.dump(result, results_json, indent=2)
 
-    return mark_list
+        with open(cfg["report"], "w") as report_file:
+            report_text = generate_report(result, cfg)
+            report_file.write(report_text)
+
+    return result
 
 # -----------------------------------------------------------------------------
 
-def run_handler(cfg, student):
-
-    if not os.path.isdir(f'{cfg["assgn_dir"]}/candidates'):
-        console.error("Candidates directory does exist. Quitting.")
+def run(self, students, recompile, run_all, quiet):
+    candidates_dir = os.path.join(self.cfg["assgn_dir"], "candidates")
+    if not os.path.isdir(candidates_dir):
+        self.console.error("Candidates directory does exist. Quitting.")
         return
 
     # Enter assignment directory
-    with pushd(cfg['assgn_dir']):
-
-        # Create a new marksheet, we will initialize it below
-        marksheet = Marksheet()
-        marksheet_path = cfg['marksheet']
+    with pushd(self.cfg['assgn_dir']):
 
         all_students = sorted(os.listdir('candidates'))
 
-        # If we want to force-remark all submissions, don't load the marksheet
-        # but just create a new one
-        if cfg['all']:
-            marksheet.add_students(all_students)
-
-        # Or if the marksheet doesn't exist, create a new one with all students
-        elif not os.path.exists(marksheet_path):
-            marksheet.add_students(all_students)
-            
-        # Marksheet exists! Just load it in
-        else:
+        # Load in an existing marksheet...
+        marksheet_path = self.cfg['marksheet']
+        marksheet = Marksheet()
+        if os.path.isfile(marksheet_path):
             marksheet.load(marksheet_path)
-    
+        # Add all students (in case new ones were downloaded...)
+        marksheet.add_students(all_students)
 
-        # If a specific student has been specified, re-run for only them.
-        # Just reset the marksheet
-        if student is not None:
-            if student not in all_students:
-                console.error(student, "submission directory doesn't exist. Stopping.")
-                return
-            students_to_mark = [ student ]
-        else:
-            students_to_mark = list(marksheet.unmarked_students())
+        # If -a is specified, it takes priority and everyone is run
+        if run_all:
+            students = all_students
+        # Otherwise, if no students specified, only run unmarked ones.
+        elif students == []:
+            students = list(marksheet.unmarked_students())
 
-        if len(students_to_mark) == 0:
-            console.error("Everyone is already marked. Run with -a to re-run, or with"
-                          " an individual student name")
+        if len(students) == 0:
+            self.console.error("Everyone is already marked. Run with -a to "
+                               "re-run, or with an individual student name")
             return
 
+        self.cfg["recompile"] = recompile
+
         # Run the marker!
-        for student in console.track(students_to_mark, "Marking"):
-            try:
-                marks_list = mark_submission(student, cfg)
-                marksheet[student] = marks_list
-                marksheet.save(marksheet_path)
-                if cfg["show_marks"]:
-                    console.log(student, "total marks", sum(marks_list))
-            except Exception as e:
-                console.error(f'Error when marking {student}: {e}')
+        for student in self.console.track(students, "Marking"):
+            result = mark_submission(student, self)
+            marksheet[student] = result["marks"]
+            if not quiet:
+                self.console.log(student, "total marks", result["total"])
+
+            # Update marksheet on disk after every change
+            marksheet.save(marksheet_path)
 

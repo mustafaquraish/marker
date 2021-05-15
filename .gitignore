@@ -4,10 +4,17 @@
 *DS_Store*
 *.vscode
 
-build/*
-dist/*
+build
+dist
 docs/build
 testing
 *.egg-info
 
-repl.py
+./repl.py
+
+node_modules
+*.code-workspace
+
+marksheet.yml
+candidates
+web

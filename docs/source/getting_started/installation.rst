@@ -25,16 +25,19 @@ installed correctly by running
 Manual installation from source
 ===============================
 
-If you want to develop, you can use the included Makefile to compile:
+If you want to install from source, you can clone the repo and install using:
 
 .. code-block:: bash
 
-   $ make install
+   $ git clone https://github.com/mustafaquraish/marker
+   $ cd marker
+   $ python setup.py install
 
-Or do-it-yourself using `setuputils` and `pip` (if your executables are named
-differently than in the Makefile)
+If you wish to develop, you might want to install in editable mode so that Any
+changes made to the code are immediately reflected in the ``marker`` command-line
+utility without having to reinstall.
 
 .. code-block:: bash
 
-   $ python -m setup.py bdist_wheel
-   $ pip install dist/*
+   $ cd marker
+   $ pip install -e .
