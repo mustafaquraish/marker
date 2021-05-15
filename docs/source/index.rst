@@ -16,18 +16,6 @@ courses who want to automate code tests for classes. It can also be useful to
 simply fetch student submissions from the learning platforms or to upload marks
 or report files that were generated through any other means.
 
-What's new? (v2.0)
-------------------
-
-- Redesigned internals, can now import an instance of the `Marker` class in your Python code and script testing / handling of marks, etc. (Documentation for this is not available yet, but you can look in `src/repl.py` for code examples)
-
-- Now uses Python's async abilities instead of multithreading to speed up API requests
-
-- Interactive CLI now available, with autocompletion of commands / student IDs.
-
-- Ability to run each command for individual students through the CLI directly
-
-- Can see some basic statistics from the marksheet in the CLI directly
 
 -----
 
@@ -35,18 +23,26 @@ For installation and usage, please look at `Getting Started`.
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started:
 
    getting_started/installation
    getting_started/access_tokens
    getting_started/system_overview
-   getting_started/configuration
    getting_started/examples
+   getting_started/changelog
+
+.. toctree::
+   :maxdepth: 1
+   :caption: General:
+
+   general/configuration
+   general/results
+   general/reports
 
 
 .. toctree::
-   :maxdepth: 0
+   :maxdepth: 1
    :caption: Commands:
 
    commands/download.rst

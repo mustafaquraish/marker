@@ -30,6 +30,7 @@ def run_test(test):
     result["passed"] = (exit_code == test['exit_code'])
     result["timed_out"] = (exit_code is None)
     result["mark"] = test["mark"] if result["passed"] else 0
+    result["out_of"] = test["mark"]
 
     return result
 

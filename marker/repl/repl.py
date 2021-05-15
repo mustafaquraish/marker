@@ -9,26 +9,36 @@ import sys
 import cmd2
 import os
 import textwrap
-from marker import Marker
+from marker import Marker, CONFIG_DIR
 from marker.repl.console import REPLConsole
 from cmd2 import ansi
 from cmd2.utils import basic_complete
+from .show_stats import show_stats
+
 
 class MarkerCLI(cmd2.Cmd):
 
     def __init__(self, args):
         shortcuts = dict(cmd2.DEFAULT_SHORTCUTS)
         # Run a quick script to get students with timed-out tests
-        shortcuts.update({'timed-out': 'grep "Timed out" candidates/*/report.txt | cut -d/ -f2 | uniq'})
+        timed_out_cmd = (f"grep 'Timed out' {args['assgn_dir']}/candidates/*/report.txt | " +
+                         f"sed -n 's/.*candidates\/\([a-zA-Z0-9\.]*\).*/\\1/p' | uniq")
+        shortcuts.update({'timed-out': timed_out_cmd})
 
         # cmd2 doesn't allow dashes by default, so just alias them
         shortcuts.update({'upload-reports'  : 'upload_reports'})
         shortcuts.update({'upload-marks'    : 'upload_marks'})
         shortcuts.update({'delete-reports'  : 'delete_reports'})
         shortcuts.update({'set-status'      : 'set_status'})
-        super().__init__(use_ipython=False, shortcuts=shortcuts)
 
-        # Hide all built-in commands (still accessible)...
+        hist_file = os.path.join(CONFIG_DIR, "cli_history.dat")
+        super().__init__(
+            use_ipython=False, 
+            shortcuts=shortcuts, 
+            persistent_history_file=hist_file,
+        )
+
+    # Hide all built-in commands (still accessible)...
         to_hide = ['edit', 'macro', 'py', 'shortcuts', 'set', 'q',
                    'run_pyscript', 'run_script', 'alias', 'help',
                    'shell', 'history', 'quit']
@@ -36,7 +46,8 @@ class MarkerCLI(cmd2.Cmd):
             self.hidden_commands.append(cmd)
 
         self.args = args
-        self.marker = Marker(self.args)
+        self.console = REPLConsole()
+        self.marker = Marker(self.args, self.console)
         self.prompt = ansi.style('marker > ', fg="blue")
         self.default_to_shell = True
         self.students_list = []
@@ -68,8 +79,8 @@ class MarkerCLI(cmd2.Cmd):
     # ---------------- Download submissions -----------------------------------
 
     download_parser = argparse.ArgumentParser()
-    download_parser.add_argument("-l", "--allow_late", action='store_true', default=False, help="Get newest submission (after deadline / not collected)")
     download_parser.add_argument("students", nargs='*', help="(Optional) specific students", completer_method=student_completer)
+    download_parser.add_argument("-l", "--allow_late", action='store_true', default=False, help="Get newest submission (after deadline / not collected)")
 
     @cmd2.with_argparser(download_parser)
     def do_download(self, args):
@@ -136,12 +147,13 @@ class MarkerCLI(cmd2.Cmd):
     # ---------------------- Display Statistics -------------------------------
 
     stats_parser = argparse.ArgumentParser()
-    stats_parser.add_argument("-m", "--minimal", action='store_true', default=False, help="Only display mean / median")
     stats_parser.add_argument("students", nargs='*', help="(Optional) specific students", completer_method=student_completer)
+    stats_parser.add_argument("-m", "--minimal", action='store_true', default=False, help="Only display mean / median")
     @cmd2.with_argparser(stats_parser)
     def do_stats(self, args):
         """ Display mark statistics for student(s) """
-        self.marker.stats(args.minimal, args.students)
+        stats = self.marker.stats(args.students)
+        show_stats(self.console, stats, args.minimal)
     
 
     # ---------------------- Set status (Markus) -----------------------------------
@@ -186,6 +198,10 @@ def main():
     if args["src_dir"] is None:
         args["src_dir"] = args["assgn_dir"]
 
+    # Make everything an absolute path
+    args["src_dir"] = os.path.abspath(args["src_dir"])
+    args["assgn_dir"] = os.path.abspath(args["assgn_dir"])
+    args["config"] = os.path.abspath(args["config"])
 
     # Remove command line args to not trip up cmd2
     sys.argv = sys.argv[:1]     # Keep argv[0] intact

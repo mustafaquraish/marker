@@ -4,8 +4,8 @@
 *DS_Store*
 *.vscode
 
-build/*
-dist/*
+build
+dist
 docs/build
 testing
 *.egg-info

@@ -9,7 +9,6 @@ class LMS(ABC):
 
     @cached_property
     def token(self):
-        print("...."*200)
         return get_or_prompt_token(self.console, self.__name, self.__identifier)
 
     def save_token(self, token):

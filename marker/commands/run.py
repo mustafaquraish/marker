@@ -23,13 +23,11 @@ def mark_submission(student, marker):
 
     student_dir = os.path.join('candidates', student)
     result = { "tests": [], "marks": [] }
+    result["out_of"] = sum(test["mark"] for test in cfg["tests"])
+
 
     # Go into the testing directory
     with pushd(student_dir):
-
-        # Add the report header if needed
-        if cfg['report_header'] is not None:
-            result["header"] = cfg['report_header'] 
 
         # -----------------------------------------------------------------
         

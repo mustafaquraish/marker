@@ -6,7 +6,7 @@ from ..utils.marksheet import Marksheet
 
 # -----------------------------------------------------------------------------
 
-def stats(self, minimal, students):
+def stats(self, students):
 
     marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
     if not os.path.isfile(marksheet_path):
@@ -23,11 +23,6 @@ def stats(self, minimal, students):
 
     results = {}
 
-    if minimal:
-        results["mean"] = marksheet.mean()
-        results["median"] = marksheet.median()
-        return results
-
     results["total_marked"] = marksheet.num_marked()
     results["compile_success"] = marksheet.num_compiled()
     results["compile_failed"] = marksheet.num_compile_failed()
@@ -40,6 +35,7 @@ def stats(self, minimal, students):
     results["compiled"]["mean"] = marksheet.mean(True)
     results["compiled"]["median"] = marksheet.median(True)
 
+    results["out_of"] = sum(test["mark"] for test in self.cfg["tests"])
 
     results["distribution"] = marksheet.get_distribution()
 

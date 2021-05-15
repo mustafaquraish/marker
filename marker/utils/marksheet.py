@@ -13,6 +13,8 @@ class Marksheet():
         else:
             with open(marksheet_path) as marksheet:
                 self.data = yaml.safe_load(marksheet)
+            if self.data is None:
+                self.data = {}
 
     def load(self, marksheet_path):
         '''
@@ -20,6 +22,8 @@ class Marksheet():
         '''
         with open(marksheet_path) as marksheet:
             self.data = yaml.safe_load(marksheet)
+        if self.data is None:
+            self.data = {}
 
     def save(self, destination_path):
         '''
@@ -34,7 +38,8 @@ class Marksheet():
             for student, mark in self.data.items():
                 if mark is None:
                     mark = ""
-                marksheet.write(f'{student}: {mark}\n')
+                if student is not None:
+                    marksheet.write(f'{student}: {mark}\n')
     
     # ----------------------- Marks Bookkeeping -------------------------------
 
@@ -44,7 +49,7 @@ class Marksheet():
         Add a list students to the marksheet if they don't already exist
         '''
         for student in student_list:
-            if student not in self.data:
+            if student not in self.data and student is not None:
                 self.data[student] = None
     
     def marked_items(self):

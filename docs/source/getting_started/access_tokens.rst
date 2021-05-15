@@ -12,17 +12,17 @@ or an API key for your specific MarkUs instance. Here's how to get them:
 
 When using the marker for the first time with Canvas, or for the first time for 
 the MarkUs instance, you will be prompted for the token on the command line, 
-and be given the option to save them locally. The marker creates 
-(and subsequently looks for):
-
-- **Canvas:** A file in your home directory, ``~/.canvas.tokens``.
-- **MarkUs:** A file in your home directory, ``~/.markus.tokens``.
-
-Each of these files is simply a CSV file with 2 columns, storing a mapping 
-between the ``base_url`` of each instance with the corresponding API key. 
-For example, your ``.markus.tokens`` file might look something like:
+and be given the option to save them locally. The marker stores the tokens in
+``~/.config/marker/tokens.json`` as a JSON file. For instance, it may look like:
 
 .. code:: 
 
-    https://markus.utsc.utoronto.ca/csca08f19,<APIKEY>
-    https://markus.utsc.utoronto.ca/cscb07f19,<APIKEY>
+    {
+        "markus": {
+            "https://markus.utsc.utoronto.ca/csca08f19": "<APIKEY>",
+            "https://markus.utsc.utoronto.ca/cscb63w20": "<APIKEY>"
+        },
+        "canvas": {
+            "https://q.utoronto.ca": "<APIKEY>",
+        }
+    }

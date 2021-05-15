@@ -64,21 +64,24 @@ General
 .. code-block:: yaml
 
     report: <filename>
+
+- The following specifies the name of the template to use to generate the report (relative to ``src_dir``):
     
+.. code-block:: yaml
+
+    report_template: <filename>
+
+- The following specifies the name of the results JSON file to be made:
+    
+.. code-block:: yaml
+
+    results: <filename>    
 
 - The following specifies some text to be put at the top of report file to provide some information:
     
 .. code-block:: yaml
 
     report_header: <text>
-    
-
-
-- The following specifies whether to add the compilation logs in the report file. If no compile option was given (and compile logs not made), then nothing is included regardless of this option.
-    
-.. code-block:: yaml
-
-    include_compile_log: <true/false>
     
 
 Test specifications
