@@ -1,8 +1,13 @@
 Changelog
 ---------
 
-Version 2.1
-===========
+Version 2.1.1
+=============
+
+* Can now download all files in Canvas submission by omitting ``file_name`` in configuration.
+
+Version 2.1.0
+=============
 
 * API largely the same, but internals restructured to make it very simple to write wrappers over it (such as a web-server).
 * Use of Abstract Base Classes for ``Console`` and ``LMS`` objects, to make extended implementations have necessary methods.

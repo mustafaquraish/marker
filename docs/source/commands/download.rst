@@ -36,7 +36,14 @@ Platform specific configurations
 Canvas
 ++++++
 
-- Since Canvas does not give you a way to restrict the file names of the submissions, it is recommended to only get the students to submit one file per Canvas assignment. The following line in the configuration controls what the file should be renamed to:
+.. admonition:: Note
+
+    If the argument below is not specified, the marker will download all the files submitted by the student in the newest submission before the deadline (unless the ``-l`` option is specified), and retain the names from the submission. 
+    
+    If you need more than one file as part of the submission, you should ask the students to double check they submit the exact name needed, or use a scriptto read the downloaded submissions and rename them.
+
+
+- If the following option is specified, then the first attachment in the submission is downloaded and renamed to the specified filename. This is useful since Canvas doesn't allow you to restrict the file names of submissions.
 
 .. code-block:: yaml
 
@@ -48,6 +55,7 @@ Canvas
 .. code-block:: yaml
 
     allow_late: <true/false>
+
 
 MarkUs
 ++++++

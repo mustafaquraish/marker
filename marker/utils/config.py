@@ -52,7 +52,7 @@ base_marker_config = {
 
 base_test_config = {
     "description": "",
-    "mark": "1",
+    "mark": 1,
     "before": None,
     "command": "",
     "after": None,

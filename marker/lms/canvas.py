@@ -67,16 +67,15 @@ class Canvas(LMS):
 
     # -------------------------------------------------------------------------
 
-    def _get_file_url(self, submission):
-        file_url = None
+    def get_newest_submission(self, submission):
+        result = None
 
         if not submission["late"] or self.cfg["allow_late"]:
             if "attachments" in submission:
-                # Assuming only one attachment for now
-                file_url = submission["attachments"][0]["url"]
+                result = submission
 
-        if file_url is not None:
-            return file_url
+        if result is not None:
+            return result
 
         # If we're here need to look at submission history
         if "submission_history" not in submission:
@@ -91,9 +90,47 @@ class Canvas(LMS):
                 if sub["submitted_at"] is not None: 
                     if sub["submitted_at"] > latest_date:
                         if "attachments" in sub:
-                            file_url = sub["attachments"][0]["url"]
+                            result = sub
                             latest_date = sub["submitted_at"]
-        return file_url
+        return result
+
+
+    async def download_attachment(self, session, file_url, student, filename):
+        async with session.get(file_url, data={}, headers=self.header) as resp:
+            content = await resp.content.read()
+            file_path = os.path.join(student, filename)
+            os.makedirs(student, exist_ok=True)
+            f = await aiofiles.open(file_path, mode='wb')
+            await f.write(content)
+            await f.close()
+
+    async def handle_download_files(self, session, student, submission):
+        """
+        Does one of the following based on `config['file_name']`:
+            - If it exists, then download first attachment and rename it
+            - Otherwise, download all attachments with original filenames
+        """
+
+        # If a single filename is specified, we downlod first attachment and rename
+        if "file_name" in self.cfg: 
+            await self.download_attachment(
+                session=session,
+                file_url=submission["attachments"][0]["url"],
+                student=student,
+                filename=self.cfg["file_name"]
+            )
+
+        # Otherwise, download all attachments...
+        else:
+            for attachment in submission["attachments"]:
+                await self.download_attachment(
+                    session=session,
+                    file_url=attachment["url"],
+                    student=student,
+                    filename=attachment["filename"]
+                )
+        
+        return True
 
     # -------------------------------------------------------------------------
     #       Functions meant to be exposed
@@ -102,6 +139,33 @@ class Canvas(LMS):
     @cached_property
     def students(self):
         return self.mapping.keys()
+
+    # -------------------------------------------------------------------------
+
+    async def download_submission(self, session, student, late=False):
+        if student not in self.mapping:
+            self.console.error(student, "not found in course list")
+            return False
+
+        canvas_id = self.mapping[student]
+
+        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
+        data = {"include[]": "submission_history"}
+
+        async with session.get(url, data=data, headers=self.header) as resp:
+            res = await resp.json()
+
+        if res.get('error') or res.get('errors'):
+            self.console.error(student, "error getting submission details")
+            return False
+
+        submission = self.get_newest_submission(res)
+        # Found no submissions.
+        if submission is None:
+            self.console.error(student, "submmission late / not found")
+            return False
+        
+        return await self.handle_download_files(session, student, submission)
 
     # -------------------------------------------------------------------------
 
@@ -176,43 +240,6 @@ class Canvas(LMS):
 
     # -------------------------------------------------------------------------
 
-    async def download_submission(self, session, student, late=False):
-        if student not in self.mapping:
-            self.console.error(student, "not found in course list")
-            return False
-
-        canvas_id = self.mapping[student]
-
-        url = (f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}")
-        data = {"include[]": "submission_history"}
-
-        async with session.get(url, data=data, headers=self.header) as resp:
-            res = await resp.json()
-
-        if res.get('error') or res.get('errors'):
-            self.console.error(student, "error getting submission details")
-            return False
-
-        file_url = self._get_file_url(res)
-
-        # Found no submissions.
-        if file_url is None:
-            self.console.error(student, "submmission late / not found")
-            return False
-
-
-        async with session.get(file_url, data={}, headers=self.header) as resp:
-            content = await resp.content.read()
-            file_path = os.path.join(student, self.cfg["file_name"])
-            os.makedirs(student, exist_ok=True)
-            f = await aiofiles.open(file_path, mode='wb')
-            await f.write(content)
-            await f.close()
-        
-        return True
-
-    # -------------------------------------------------------------------------
-
     async def upload_mark(self, session, student, mark_list):
         if student not in self.mapping:
             self.console.error(student, "not found in course list")
@@ -268,3 +295,18 @@ class Canvas(LMS):
         return True
 
 # -----------------------------------------------------------------------------
+
+
+from difflib import SequenceMatcher
+
+def findBestAttachment(self, filename, submission):
+    s = SequenceMatcher()
+    s.set_seq2(filename)
+    result = []
+    for attachment in submission["attachments"]:
+        s.set_seq1(attachment["filename"])
+        result.append((s.ratio(), attachment))
+    return max(result)[1]
+
+
+
