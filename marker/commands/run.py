@@ -47,16 +47,16 @@ def mark_submission(student, marker):
 
         # -----------------------------------------------------------------
         
+        result["compiled"] = True
+        run_tests = True
+
         # If a compilation check is set, run the command. If the check 
         # fails, then we don't have to run any of the tests.
-        run_tests = True
         if cfg['compile_check'] is not None:
             code, output = run_command(cfg['compile_check'], timeout=1)
             if not (code == 0):
                 result["compiled"] = False
                 run_tests = False
-            else:
-                result["compiled"] = True
 
         # -----------------------------------------------------------------
 
