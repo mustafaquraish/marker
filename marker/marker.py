@@ -30,7 +30,7 @@ class Marker():
             self.cfg = load_config(config_path)
             console.log(f"Config Loaded")
         except FileNotFoundError:
-            console.error(f"Could not find {config_path}. Exiting.")
+            console.error(f"Could not find {config_path}.")
             exit(1)
         self.cfg.update(args)
         self.console = console
