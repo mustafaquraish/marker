@@ -21,6 +21,11 @@ tests:
     mark: 2
     timeout: 2
 
+  - description: "Testing if exit(0) works"
+    command: ./tests test_exit_0
+    mark: 1
+    timeout: 2
+
   - description: "Testing sleep_10_sec()"
     command: ./tests test_sleep_10_sec
     mark: 2
