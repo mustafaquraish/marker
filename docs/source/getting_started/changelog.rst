@@ -1,9 +1,13 @@
 Changelog
 ---------
 
-* Ignore hidden files when performing `os.listdir()`
+Latest
+======
+
+* Ignore hidden files when performing ``os.listdir()``
 * Add running time per test to results
-* Can now set `submission_comment` in configuration (for Canvas) to add some text comments along with the posted report.
+* Can now set ``submission_comment`` in configuration (for Canvas) to add some text comments along with the posted report.
+* Can change the ``import_command`` used to import files in ``prepare`` to soft/hard link them instead of copying, etc.
 
 Version 2.1.1
 =============

@@ -40,6 +40,7 @@ base_marker_config = {
     "default_criteria": "tests",                    # Markus
 
     "imports": [],
+    "import_command": "cp -rf",
     
     "marksheet": "marksheet.yml",
     "results": "results.json",

@@ -26,7 +26,10 @@ def prepare(self, students):
         if os.path.exists(student_path):
             for item in self.cfg['imports']:
                 item_path = os.path.join(self.cfg["src_dir"], item)
-                run_command(f'cp -rf {item_path} {student_path}')
+                
+                cmdprefix = self.cfg["import_command"]
+                cmd = f'{cmdprefix} {item_path} {student_path}'
+                run_command(cmd)
         else:
             self.console.error(student_path, "does not exist.")
             continue
