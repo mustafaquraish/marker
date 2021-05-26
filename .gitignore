@@ -5,6 +5,7 @@
 *.vscode
 
 build
+_build
 dist
 docs/build
 testing
