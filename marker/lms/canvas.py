@@ -228,7 +228,10 @@ class Canvas(LMS):
 
         file_id = res.get('id')
         url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}"
-        data = {"comment[file_ids][]": file_id}
+        data = { "comment[file_ids][]": file_id }
+        if "submission_comment" in self.cfg and self.cfg["submission_comment"] is not None:
+            data["comment[text_comment]"] = self.cfg["submission_comment"]
+
         async with session.put(url, data=data, headers=self.header) as resp:
             res = await resp.json()
         

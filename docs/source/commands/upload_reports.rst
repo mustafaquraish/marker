@@ -41,3 +41,9 @@ Configuration Options
 .. code-block:: yaml
 
     report: <filename>
+
+- (Canvas only) By default, only the report file is uploaded with no text. If you want to add some text to the comment with the report file, you can set the following field:
+
+.. code-block:: yaml
+
+    submission_comment: <text>

@@ -18,7 +18,9 @@ def run_test(test):
     if test['before'] is not None:
         run_command(test['before'], timeout)
     
+    start_time = time.time()
     exit_code, output = run_command(test['command'], timeout=timeout)
+    end_time = time.time()
 
     if test['after'] is not None:
         run_command(test['after'], timeout)
@@ -27,6 +29,7 @@ def run_test(test):
     result["description"] = test['description']
     result["output"] = output
     result["exit_code"] = exit_code
+    result["time"] = end_time - start_time
     result["passed"] = (exit_code == test['exit_code'])
     result["timed_out"] = (exit_code is None)
     result["mark"] = test["mark"] if result["passed"] else 0

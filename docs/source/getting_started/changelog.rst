@@ -1,6 +1,10 @@
 Changelog
 ---------
 
+* Ignore hidden files when performing `os.listdir()`
+* Add running time per test to results
+* Can now set `submission_comment` in configuration (for Canvas) to add some text comments along with the posted report.
+
 Version 2.1.1
 =============
 

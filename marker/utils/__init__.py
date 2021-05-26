@@ -24,3 +24,8 @@ def pushd(new_dir):
 def ensure_config_dir():
     if not os.path.isdir(CONFIG_DIR):
         os.makedirs(CONFIG_DIR, exist_ok=True)
+
+def listdir(path, hidden=False):
+    for x in os.listdir(path):
+        if hidden or not x.startswith("."):
+            yield x

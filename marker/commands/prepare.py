@@ -3,7 +3,7 @@
 import os
 import sys
 
-from ..utils import pushd
+from ..utils import pushd, listdir
 from ..utils import run_command
 from ..utils.marksheet import Marksheet
 
@@ -16,7 +16,7 @@ def prepare(self, students):
         self.console.error("Candidates directory does exist. Quitting.")
         return
 
-    all_students = sorted(os.listdir(candidates_dir))
+    all_students = sorted(listdir(candidates_dir))
     if students == []:
         students = all_students
 
@@ -41,7 +41,7 @@ def prepare(self, students):
         # Output the logs to the given file.
         student_path = os.path.join(candidates_dir, student)
         with pushd(student_path):
-            _, clog = run_command(self.cfg['compile'], timeout=10)
+            _, clog = run_command(self.cfg['compile'], timeout=10, limit=None)
             with open(self.cfg['compile_log'], 'w') as log:
                 log.write(clog)
 

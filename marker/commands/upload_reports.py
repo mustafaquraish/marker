@@ -4,8 +4,7 @@ import os
 import aiohttp
 import asyncio
 
-from ..utils import pushd
-from ..utils import config
+from ..utils import pushd, listdir
 
 async def upload_report_dispatch(lms, students):
     '''
@@ -13,7 +12,7 @@ async def upload_report_dispatch(lms, students):
     the working directory is the root of the assignment directory
     '''
     if students == []:
-        students = sorted(os.listdir())
+        students = sorted(listdir("."))
     connector = aiohttp.TCPConnector(limit=10)
     async with aiohttp.ClientSession(connector=connector) as session:
         tasks = [lms.upload_report(session, student) for student in students]

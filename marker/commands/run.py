@@ -3,8 +3,7 @@
 import os
 import sys
 
-from ..utils import config
-from ..utils import pushd
+from ..utils import pushd, listdir
 from ..utils import run_command
 from ..utils.tests import run_test
 from ..utils.marksheet import Marksheet
@@ -35,7 +34,7 @@ def mark_submission(student, marker):
 
         # Force recompile if needed
         if cfg['recompile'] and (cfg['compile'] is not None) :
-            _, clog = run_command(cfg['compile'], timeout=10)
+            _, clog = run_command(cfg['compile'], timeout=10, limit=None)
             result["compile_log"] = clog
 
         # If the compile log exists, include it in the report based on the
@@ -94,7 +93,7 @@ def run(self, students, recompile, run_all, quiet):
     # Enter assignment directory
     with pushd(self.cfg['assgn_dir']):
 
-        all_students = sorted(os.listdir('candidates'))
+        all_students = sorted(listdir('candidates'))
 
         # Load in an existing marksheet...
         marksheet_path = self.cfg['marksheet']

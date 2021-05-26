@@ -34,7 +34,7 @@ def update_config(config, updated):
 ###############################################################################
 
 base_marker_config = {
-    "default_criteria": "tests",
+    "default_criteria": "tests",                    # Markus
 
     "imports": [],
     

@@ -29,13 +29,14 @@ Canvas
 
 .. code:: yaml
 
-   lms: canvas                     # Platform name
-   base_url: {no default}          # Base URL of Canvas instance
-   course: {no default}            # Course ID from Canvas
-   assignment: {no default}        # Assignment ID from Canvas
+   lms: canvas                         # Platform name
+   base_url: {no default}              # Base URL of Canvas instance
+   course: {no default}                # Course ID from Canvas
+   assignment: {no default}            # Assignment ID from Canvas
 
-   allow_late: false               # Download late submissions
-   file_name: {no default}         # Name for the downloaded submission
+   allow_late: false                   # Download late submissions
+   file_name: {no default}             # Name for the downloaded submission
+   submission_comment: {no default}    # Text to add to comment with report
 
 
 MarkUs

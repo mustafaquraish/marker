@@ -5,8 +5,7 @@ import os
 import aiohttp
 import asyncio
 
-from ..utils import config
-from ..utils import pushd
+from ..utils import pushd, listdir
 from ..utils.marksheet import Marksheet
 
 
@@ -38,7 +37,7 @@ def download(self, students, allow_late=False):
     # Populate missing students into the marksheet...
 
     # Load in an existing marksheet...
-    students = os.listdir(candidates_dir)
+    students = listdir(candidates_dir)
     marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
     marksheet = Marksheet()
     if os.path.isfile(marksheet_path):

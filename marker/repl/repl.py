@@ -9,8 +9,9 @@ import sys
 import cmd2
 import os
 import textwrap
-from marker import Marker, CONFIG_DIR
-from marker.repl.console import REPLConsole
+from .. import Marker, CONFIG_DIR
+from .console import REPLConsole
+from ..utils import listdir
 from cmd2 import ansi
 from cmd2.utils import basic_complete
 from .show_stats import show_stats
@@ -62,7 +63,7 @@ class MarkerCLI(cmd2.Cmd):
         else:
             candidates_dir = os.path.join(self.args["assgn_dir"], "candidates")
             if os.path.isdir(candidates_dir):
-                students_list = sorted(os.listdir(candidates_dir))
+                students_list = sorted(listdir(candidates_dir))
                 self.students_list = students_list
 
     # --------------- Reload config file --------------------------------------

@@ -42,6 +42,7 @@ results file:
                 "exit_code": 0,         # Exit code of the test case
                 "passed": true,         # Passed the test case?
                 "timed_out": false,     # Test case timed out?
+                "time": 0.12,           # Time taken (in seconds) for test
                 "mark": 1,              # Mark scored for test case
                 "out_of": 1             # Mark the test case is out of
             },
