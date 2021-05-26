@@ -1,5 +1,7 @@
 import yaml
 import os
+from copy import deepcopy
+from collections import defaultdict
 
 from . import CONFIG_DIR
 
@@ -13,7 +15,8 @@ def open_config_file(cfg_path):
     return config
 
 def load_config(cfg_path):
-    config = yaml.safe_load(yaml.dump(base_marker_config))
+    config = deepcopy(base_marker_config)
+    config = defaultdict(lambda: None, config)
     if os.path.isfile(CUSTOM_DEFAULT_CONFIG):
         update_config(config, open_config_file(CUSTOM_DEFAULT_CONFIG))
     update_config(config, open_config_file(cfg_path))

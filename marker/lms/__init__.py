@@ -21,7 +21,7 @@ class LMSFactory:
                 raise ValueError(f"config[{param}] is missing or null.")
         
         # Clean URL:
-        if "base_url" in config and config["base_url"][-1] == "/":
+        if config["base_url"] and config["base_url"][-1] == "/":
             config["base_url"] = config["base_url"][:-1]
 
         return cls(config)

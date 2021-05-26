@@ -112,7 +112,7 @@ class Canvas(LMS):
         """
 
         # If a single filename is specified, we downlod first attachment and rename
-        if "file_name" in self.cfg: 
+        if self.cfg["file_name"] is not None: 
             await self.download_attachment(
                 session=session,
                 file_url=submission["attachments"][0]["url"],
@@ -229,7 +229,7 @@ class Canvas(LMS):
         file_id = res.get('id')
         url = f"{self.base_url}/api/v1/courses/{self.course_id}/assignments/{self.assgn_id}/submissions/{canvas_id}"
         data = { "comment[file_ids][]": file_id }
-        if "submission_comment" in self.cfg and self.cfg["submission_comment"] is not None:
+        if self.cfg["submission_comment"] is not None:
             data["comment[text_comment]"] = self.cfg["submission_comment"]
 
         async with session.put(url, data=data, headers=self.header) as resp:

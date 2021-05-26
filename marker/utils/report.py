@@ -7,7 +7,7 @@ CUSTOM_DEFAULT_TEMPLATE = os.path.join(CONFIG_DIR, "template.txt")
 
 def generate_report(result, config):
     template_text = base_template
-    if "report_template" in config:
+    if config["report_template"] is not None:
         template_path = os.path.join(config["src_dir"],
                                      config["report_template"])
         with open(template_path) as file:
