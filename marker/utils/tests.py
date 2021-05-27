@@ -55,7 +55,6 @@ def run_command(cmd, timeout=None, output=True, limit=1000):
 
     try:
         proc = subproc.Popen(cmd, 
-                             text=True,
                              shell=True,
                              preexec_fn=os.setsid,
                              stdout=stdout_fd,
@@ -71,4 +70,9 @@ def run_command(cmd, timeout=None, output=True, limit=1000):
     except subproc.TimeoutExpired:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
-    return (proc.returncode, proc.stdout.read(limit) if output else "")
+    text = ""
+    if output:
+        text = proc.stdout.read(limit)
+        text = text.decode('utf-8', errors='replace')
+
+    return (proc.returncode, text)
