@@ -36,10 +36,10 @@ class REPLConsole(ConsoleABC, RichConsole):
             console=self
         )
         with progress:
-            task_bar = progress.add_task(label, total=len(tasks), key=tasks[0])
+            task_bar = progress.add_task(label, total=len(tasks)+1, key=tasks[0])
             for task in tasks:
-                yield task
                 progress.update(task_bar, advance=1, key=task)
+                yield task
 
     async def track_async(self, tasks, label="Processing"):
         with Progress(console=self) as progress:
