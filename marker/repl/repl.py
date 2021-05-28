@@ -154,7 +154,11 @@ class MarkerCLI(cmd2.Cmd):
     def do_stats(self, args):
         """ Display mark statistics for student(s) """
         stats = self.marker.stats(args.students)
-        show_stats(self.console, stats, args.minimal)
+        if args.students != []:
+            for user, markList in stats.items():
+                self.console.log(f"{user}: {markList}")
+        else:
+            show_stats(self.console, stats, args.minimal)
     
 
     # ---------------------- Set status (Markus) -----------------------------------
