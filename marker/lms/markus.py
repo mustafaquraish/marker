@@ -29,6 +29,13 @@ class Markus(LMS):
 
     # -------------------------------------------------------------------------
 
+    # MarkUs API Provides no nice way to get the actual `result_id` that we
+    # Need to get the URL of the results page.
+    def submissionURL(self, student):
+        return None
+
+    # -------------------------------------------------------------------------
+
     @cached_property
     def mapping(self):
         url = f'{self.base_url}/api/assignments/{self.assgn_id}/groups.json'

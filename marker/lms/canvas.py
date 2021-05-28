@@ -31,6 +31,20 @@ class Canvas(LMS):
 
     # -------------------------------------------------------------------------
 
+    def submissionURL(self, student):
+        if "mapping" not in self.__dict__:
+            return None
+        if student not in self.mapping:
+            return None
+        userid = self.mapping[student]
+        url = f"{self.base_url}/courses/{self.course_id}/gradebook/" + \
+              f"speed_grader?assignment_id={self.assgn_id}&" + \
+              f"student_id={userid}"
+        return url
+
+
+    # -------------------------------------------------------------------------
+
     @cached_property
     def mapping(self):
 
@@ -60,7 +74,9 @@ class Canvas(LMS):
                 elif 'sis_user_id' in user:
                     mapping[user['sis_user_id']] = user['id']
                 else:
+                    self.console.error(f"User entry: {user}")
                     raise Exception("No suitable column found in canvas data")
+
             page += 1
 
         return mapping

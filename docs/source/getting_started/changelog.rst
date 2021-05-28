@@ -8,6 +8,7 @@ Latest
 * Add running time per test to results
 * Can now set ``submission_comment`` in configuration (for Canvas) to add some text comments along with the posted report.
 * Can change the ``import_command`` used to import files in ``prepare`` to soft/hard link them instead of copying, etc.
+* Can now use ``marker.getLMSSubmissionURL()`` to get (for Canvas) the URL to open the submission directly.
 
 Version 2.1.1
 =============

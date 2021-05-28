@@ -41,6 +41,21 @@ class Marker():
         lms_instance.console = self.console
         return lms_instance    
 
+    def getLMSSubmissionURL(self, user):
+        """
+        Returns the URL to the submission page on the LMS if the students
+        have already been fetched, otherwise `None`.
+        """
+
+        # These are cached properties, so we want to make sure that they
+        # have already been accessed. We don't want to force-access them
+        # since it's not necessary that an LMS is provided, and we don't
+        # want to have to require it.
+        if "lms" not in self.__dict__ or "mapping" not in self.lms.__dict__:
+            return None
+        
+        return self.lms.submissionURL(user)
+
     def getMarksheet(self):
         marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
         if not os.path.exists(marksheet_path):
