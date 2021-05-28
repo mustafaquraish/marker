@@ -1,8 +1,8 @@
 Changelog
 ---------
 
-Latest
-======
+Version 2.1.2
+=============
 
 * Ignore hidden files when performing ``os.listdir()``
 * Add running time per test to results
