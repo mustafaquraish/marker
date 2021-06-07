@@ -8,6 +8,7 @@ from .lms import LMSFactory
 from .repl.console import REPLConsole
 from .utils.config import load_config
 from .utils.marksheet import Marksheet
+import shutil
 
 
 class Marker():
@@ -56,6 +57,14 @@ class Marker():
         
         return self.lms.submissionURL(user)
 
+    @property
+    def candidates_dir(self):
+        return os.path.join(self.cfg["assgn_dir"], "candidates")
+
+    @property
+    def marksheet_path(self):
+        return os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
+
     def getMarksheet(self):
         marksheet_path = os.path.join(self.cfg["assgn_dir"], self.cfg["marksheet"])
         if not os.path.exists(marksheet_path):
@@ -69,6 +78,15 @@ class Marker():
             self.console.error(student_dir, "dir not found. Stopping.")
             return None
         return student_dir
+
+    def clean(self):
+        """
+        Delete all submissions / marking data. Be careful when using this!
+        """
+        if os.path.isdir(self.candidates_dir):
+            shutil.rmtree(self.candidates_dir)
+        if os.path.isfile(self.marksheet_path):
+            os.remove(self.marksheet_path)
 
 
     # Import in the specific command handlers...

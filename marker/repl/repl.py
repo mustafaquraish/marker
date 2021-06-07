@@ -172,6 +172,20 @@ class MarkerCLI(cmd2.Cmd):
         """ Set the status on MarkUs for student(s) """
         self.marker.set_status(args.status, args.students)
 
+    # ---------------------- Clean everything --------------------------------------
+
+    clean_parser = argparse.ArgumentParser()
+    clean_parser.add_argument("-f", "--force", action='store_true', default=False, help="Don't ask to confirm")
+
+    @cmd2.with_argparser(clean_parser)
+    def do_clean(self, args):
+        """ Remove candidates directory and marksheet """
+        if not args.force:
+            if not self.console.ask("Delete all submissions and marksheet? ", default=True):
+                self.console.error("Cancelled")
+                return
+        self.marker.clean()
+
     # -------------------------- Aliases --------------------------------------
 
     do_q = cmd2.Cmd.do_quit
