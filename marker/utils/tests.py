@@ -58,7 +58,8 @@ def run_command(cmd, timeout=None, output=True, limit=1000):
                              shell=True,
                              preexec_fn=os.setsid,
                              stdout=stdout_fd,
-                             stderr=subproc.STDOUT
+                             stderr=subproc.STDOUT,
+                             executable="/bin/bash"
                              )
     except Exception as e:
         # We have an unknown error here, possibly that the executable 
