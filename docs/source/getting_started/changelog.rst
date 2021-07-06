@@ -1,6 +1,13 @@
 Changelog
 ---------
 
+Version 2.1.3 (Minor update)
+============================
+
+* New ``clean`` command added to REPL which removes all marking information (``candidates/`` and ``marksheet.yml``)
+* Fix off-by-one error in progress tracker
+* Change default shell for running commands to ``/bin/bash``
+
 Version 2.1.2
 =============
 
