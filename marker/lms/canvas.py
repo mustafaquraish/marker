@@ -312,20 +312,3 @@ class Canvas(LMS):
                 self.console.error(student, "error deleting comment id", comment_id)
 
         return True
-
-# -----------------------------------------------------------------------------
-
-
-from difflib import SequenceMatcher
-
-def findBestAttachment(self, filename, submission):
-    s = SequenceMatcher()
-    s.set_seq2(filename)
-    result = []
-    for attachment in submission["attachments"]:
-        s.set_seq1(attachment["filename"])
-        result.append((s.ratio(), attachment))
-    return max(result)[1]
-
-
-
