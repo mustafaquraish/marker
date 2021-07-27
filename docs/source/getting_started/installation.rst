@@ -25,13 +25,14 @@ installed correctly by running
 Manual installation from source
 ===============================
 
-If you want to install from source, you can clone the repo and install using:
+If you want to install from source, you can clone the repo and install using ``flit``:
 
 .. code-block:: bash
 
    $ git clone https://github.com/mustafaquraish/marker
    $ cd marker
-   $ python setup.py install
+   $ pip install flit
+   $ flit install
 
 If you wish to develop, you might want to install in editable mode so that Any
 changes made to the code are immediately reflected in the ``marker`` command-line
@@ -39,5 +40,4 @@ utility without having to reinstall.
 
 .. code-block:: bash
 
-   $ cd marker
-   $ pip install -e .
+   $ flit install -s
