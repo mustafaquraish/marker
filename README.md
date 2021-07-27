@@ -39,10 +39,11 @@ Alternatively, if you want to develop, you will need to build from source. First
 git clone https://github.com/mustafaquraish/marker
 ```
 
-Then, go into the cloned repo and and install using
+Then, go into the cloned repo and use `flit` to install
 ```bash
 cd marker
-python3 setup.py install
+pip install flit
+flit install
 ```
 
 ---
