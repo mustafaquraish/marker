@@ -1,4 +1,4 @@
-import yaml
+from ruamel.yaml import YAML
 
 class Marksheet():
 
@@ -11,17 +11,14 @@ class Marksheet():
         if marksheet_path is None:
             self.data = {}
         else:
-            with open(marksheet_path) as marksheet:
-                self.data = yaml.safe_load(marksheet)
-            if self.data is None:
-                self.data = {}
+            self.load(marksheet_path)
 
     def load(self, marksheet_path):
         '''
         Initialize the marksheet with the contents of a file
         '''
         with open(marksheet_path) as marksheet:
-            self.data = yaml.safe_load(marksheet)
+            self.data = YAML().load(marksheet)
         if self.data is None:
             self.data = {}
 

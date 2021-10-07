@@ -1,4 +1,4 @@
-import yaml
+from ruamel.yaml import YAML
 import os
 from copy import deepcopy
 from collections import defaultdict
@@ -9,7 +9,7 @@ CUSTOM_DEFAULT_CONFIG = os.path.join(CONFIG_DIR, "config.yml")
 
 def open_config_file(cfg_path):
     with open(cfg_path) as cfg_file:
-        config = yaml.safe_load(cfg_file)
+        config = YAML().load(cfg_file)
     if config is None:
         config = {}
     return config
