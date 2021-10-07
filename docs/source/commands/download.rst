@@ -36,6 +36,15 @@ Platform specific configurations
 Canvas
 ++++++
 
+- The following option can be specified to choose the specific field that is used to identify the submissions. The default value is ``None``, which tries to use one of the following (in order): ``email``, ``login_id``, ``sis_user_id``.
+  Note that for courses on canvas that are old, some of these fields get removed from the API responses, so in those cases the selected identifier may not be found.
+
+.. code-block:: yaml
+
+    # Must be one of "email", "login_id", "sis_user_id" or null
+    canvas_identifier: email
+
+
 .. admonition:: Note
 
     If the argument below is not specified, the marker will download all the files submitted by the student in the newest submission before the deadline (unless the ``-l`` option is specified), and retain the names from the submission. 

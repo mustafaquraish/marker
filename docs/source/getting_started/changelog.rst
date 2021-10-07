@@ -1,6 +1,8 @@
 Changelog
 ---------
 
+- Add the ``canvas_identifier`` option in configuration to allow customizing the identifier for submissions
+
 Version 2.1.3 (Minor update)
 ============================
 

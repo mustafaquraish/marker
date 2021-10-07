@@ -38,6 +38,7 @@ def update_config(config, updated):
 
 base_marker_config = {
     "default_criteria": "tests",                    # Markus
+    "canvas_identifier": None,
 
     "imports": [],
     "import_command": "cp -rf",

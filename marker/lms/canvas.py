@@ -6,6 +6,7 @@ Utilities related to interfacing with Canvas
 import requests
 import aiofiles
 from functools import cached_property
+import sys
 import os
 
 from .base import LMS
@@ -63,10 +64,24 @@ class Canvas(LMS):
             }
             res = requests.get(url, data=data, headers=self.header).json()
 
-            # Pick the field as the identifier. For archived courses, login_id
-            # is not always available. This makes it easier to test
+            # Get preferred identifier from config
+            preferred_identifier = self.cfg['canvas_identifier']
+            if preferred_identifier not in (None, 'email', 'sis_user_id', 'login_id'):
+                self.console.error(f"Invalid canvas identifier: {preferred_identifier}")
+                sys.exit(1)
+
             for user in res:
-                if 'email' in user:
+                # Try to use the preferred identifier
+                if preferred_identifier is not None:
+                    if preferred_identifier not in user:
+                        self.console.error(f"{user['name']}: missing preferred identifier ({preferred_identifier}) in Canvas data")
+                        sys.exit(1)
+
+                    mapping[user[preferred_identifier]] = user['id']
+
+                # Pick the field as the identifier. For archived courses, login_id
+                # is not always available. This makes it easier to test
+                elif 'email' in user:
                     userid = user['email'].split('@')[0]
                     mapping[userid] = user['id']
                 elif 'login_id' in user:
