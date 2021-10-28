@@ -1,10 +1,13 @@
 Changelog
 ---------
 
+Version 2.1.4
+=============
+
 - Add the ``canvas_identifier`` option in configuration to allow customizing the identifier for submissions
 
-Version 2.1.3 (Minor update)
-============================
+Version 2.1.3
+=============
 
 * New ``clean`` command added to REPL which removes all marking information (``candidates/`` and ``marksheet.yml``)
 * Fix off-by-one error in progress tracker
