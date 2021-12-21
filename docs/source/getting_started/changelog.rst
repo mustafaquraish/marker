@@ -1,6 +1,11 @@
 Changelog
 ---------
 
+Version 2.1.5
+=============
+
+- Fix depenency issue with Ruamel.YAML in published package
+
 Version 2.1.4
 =============
 

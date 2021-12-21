@@ -23,7 +23,7 @@ requires=[
     "aiohttp == 3.7.4",
     "cmd2 == 1.5.0",
     "Jinja2 == 3.0.0",
-    "PyYAML == 5.4.1",
+    "ruamel.yaml == 0.17.17",
     "requests == 2.25.1",
     "rich == 10.2.0",
 ]
