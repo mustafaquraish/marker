@@ -39,8 +39,24 @@ Canvas
    submission_comment: {no default}    # Text to add to comment with report
 
 
-MarkUs
-++++++
+MarkUs version 2
+++++++++++++++++
+
+.. code:: yaml
+
+   lms: markus2                        # Platform name
+   base_url: {no default}              # Base URL of MarkUs instance
+   course: {no default}                # Course ID (numeric) from MarkUs
+   assignment: {no default}            # Assignment short identifier
+
+   allow_late: false                   # Download late submissions
+   file_names: null                    # Files to get; If null, get all in zip
+
+   default_criteria: tests             # Default criteria for test cases
+
+
+MarkUs version 1
+++++++++++++++++
 
 .. code:: yaml
 

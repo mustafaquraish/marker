@@ -1,4 +1,5 @@
 from .markus import Markus
+from .markus2 import Markus2
 from .canvas import Canvas
 
 class LMSFactory:
@@ -27,4 +28,5 @@ class LMSFactory:
         return cls(config)
 
 LMSFactory.register(Markus, 'markus', ['base_url', 'assignment'])
+LMSFactory.register(Markus2, 'markus2', ['base_url', 'course', 'assignment'])
 LMSFactory.register(Canvas, 'canvas', ['base_url', 'course', 'assignment'])
