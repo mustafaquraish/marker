@@ -16,14 +16,14 @@ def run_test(test):
 
     # Run the setup, main, and cleaup commands for the test case if needed
     if test['before'] is not None:
-        run_command(test['before'], timeout)
+        run_command(test['before'], timeout, output=False)
     
     start_time = time.time()
     exit_code, output = run_command(test['command'], timeout=timeout)
     end_time = time.time()
 
     if test['after'] is not None:
-        run_command(test['after'], timeout)
+        run_command(test['after'], timeout, output=False)
 
     result = {} 
     result["description"] = test['description']
